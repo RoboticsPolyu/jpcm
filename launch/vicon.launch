@@ -1,0 +1,13 @@
+<launch>
+
+	<node pkg="px4ctrl" type="odo_node" name="odo_node" output="screen">
+        <!-- <remap from="~odom" to="/vicon_imu_ekf_odom" /> -->
+			
+		<!-- <remap from="~odom" to="/vins_fusion/imu_propagate" /> -->
+
+        <remap from="~odom" to="/vicon/odom" />
+		<remap from="~cmd" to="/position_cmd" />
+        <rosparam command="load" file="$(find px4ctrl)/config/ctrl_param_fpv.yaml" />
+	</node>
+ 
+</launch>
