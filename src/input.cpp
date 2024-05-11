@@ -33,9 +33,7 @@ void RC_Data_t::feed(mavros_msgs::RCInConstPtr pMsg)
             ch[i] = (ch[i] + DEAD_ZONE) / (1 - DEAD_ZONE);
         else
             ch[i] = 0.0;
-//	std::cout << "ch: [ " << i << " , " << ch[i] << " ] -  ";
     }
-  //  std::cout << std::endl;
 
     mode = ((double)msg.channels[8] - 1000.0) / 1000.0;
     gear = ((double)msg.channels[5] - 1000.0) / 1000.0;
@@ -97,8 +95,8 @@ void RC_Data_t::feed(mavros_msgs::RCInConstPtr pMsg)
 
     //std::cout << "mode: [ " << mode << " ]" << std::endl;
     //std::cout << "gear: [ " << gear << " ]" << std::endl;
-    //std::cout << "is hover mode: " << is_hover_mode << std::endl;
-    //std::cout << "is command mode: " << is_command_mode << std::endl;
+    std::cout << "is hover mode: " << is_hover_mode << std::endl;
+    std::cout << "is command mode: " << is_command_mode << std::endl;
 
     last_mode = mode;
     last_gear = gear;
@@ -182,7 +180,7 @@ void Imu_Data_t::feed(sensor_msgs::ImuConstPtr pMsg)
     w(1) = msg.angular_velocity.y;
     w(2) = msg.angular_velocity.z;
 
-    a(0) = msg.linear_acceleration.x;
+    a(0) = msg.linear_acceleration.x; 
     a(1) = msg.linear_acceleration.y;
     a(2) = msg.linear_acceleration.z;
 

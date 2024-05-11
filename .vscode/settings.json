@@ -67,6 +67,7 @@
         "typeindex": "cpp",
         "typeinfo": "cpp",
         "variant": "cpp",
-        "core": "cpp"
+        "core": "cpp",
+        "dense": "cpp"
     }
 }

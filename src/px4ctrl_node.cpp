@@ -8,6 +8,13 @@ void mySigintHandler(int sig)
     ros::shutdown();
 }
 
+
+void hover_thrust_cb(const mavros_msgs::TrustMoments::ConstPtr& msg, float *hover_thrust)
+{
+    *hover_thrust = msg->trust_x;
+    // std::cout << "hover thrust : [ " << *hover_thrust << " ]" << std::endl;
+}
+
 int main(int argc, char *argv[])
 {
     ros::init(argc, argv, "px4ctrl");
@@ -60,6 +67,9 @@ int main(int argc, char *argv[])
                                        boost::bind(&Acc_Data_t::feed, &fsm.acc_data, _1),
                                        ros::VoidConstPtr(),
                                        ros::TransportHints().tcpNoDelay());
+
+    ros::Subscriber hover_thrust_sub = 
+        nh.subscribe<mavros_msgs::TrustMoments>("/mavros/trust_moments_px4", 10, boost::bind(&hover_thrust_cb, _1, &fsm.hover_thrust));
 
     ros::Subscriber rc_sub;
     if (!param.takeoff_land.no_RC) // mavros will still publish wrong rc messages although no RC is connected

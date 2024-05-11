@@ -12,6 +12,27 @@
 #include "input.h"
 #include <Eigen/Dense>
 
+#include <gtsam/geometry/Pose3.h>
+#include <gtsam/geometry/Quaternion.h>
+#include <gtsam/geometry/Rot3.h>
+#include <gtsam/inference/Symbol.h>
+#include <gtsam/navigation/ImuFactor.h>
+#include <gtsam/navigation/NavState.h>
+#include <gtsam/navigation/PreintegrationBase.h>
+#include <gtsam/nonlinear/ISAM2.h>
+#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+#include <gtsam/nonlinear/LevenbergMarquardtParams.h>
+#include <gtsam/nonlinear/Marginals.h>
+#include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/nonlinear/NonlinearOptimizer.h>
+#include <gtsam/nonlinear/Values.h>
+#include <gtsam/slam/BetweenFactor.h>
+#include <gtsam/slam/PriorFactor.h>
+#include <gtsam/navigation/CombinedImuFactor.h>
+#include <gtsam/navigation/GPSFactor.h>
+#include <gtsam/navigation/ImuFactor.h>
+
 struct Desired_State_t
 {
 	Eigen::Vector3d p;
@@ -62,6 +83,7 @@ public:
       const Parameter_t &param);
   void resetThrustMapping(void);
 
+  void set_hover_thrust(float hover_thrust) { thr2acc_ = param_.gra / hover_thrust; }
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
 private:

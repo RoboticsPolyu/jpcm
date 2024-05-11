@@ -10,7 +10,7 @@
 #include <mavros_msgs/SetMode.h>
 #include <mavros_msgs/CommandLong.h>
 #include <mavros_msgs/CommandBool.h>
-
+#include "TrustMoments.h"
 
 #include "input.h"
 // #include "ThrustCurve.h"
@@ -35,9 +35,10 @@ public:
 	RC_Data_t rc_data;
 	State_Data_t state_data;
 	ExtendedState_Data_t extended_state_data;
-	Odom_Data_t odom_data;
-	Imu_Data_t imu_data;
-	Acc_Data_t acc_data;
+	Odom_Data_t          odom_data;
+	Imu_Data_t           imu_data;
+	Acc_Data_t           acc_data; // linear acc
+	float                hover_thrust;
 	
 	Command_Data_t cmd_data;
 	Battery_Data_t bat_data;

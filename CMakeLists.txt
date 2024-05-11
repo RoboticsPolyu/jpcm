@@ -19,6 +19,7 @@ find_package(catkin REQUIRED COMPONENTS
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 find_package(Eigen3 REQUIRED) 
+find_package(GTSAM REQUIRED)
 
 catkin_package(
 )
@@ -26,18 +27,21 @@ catkin_package(
 include_directories(
   ${catkin_INCLUDE_DIRS}
   ${EIGEN_INCLUDE_DIRS}
+  ${GTSAM_INCLUDE_DIR}
   include/${PROJECT_NAME}
   include
 )
 
-add_executable(odo_node        
+add_executable(odom_node        
   src/odo_node.cpp
 )
 
-add_dependencies(odo_node quadrotor_msgs geometry_msgs)
+add_dependencies(odom_node quadrotor_msgs geometry_msgs)
 
-target_link_libraries(odo_node
+target_link_libraries(odom_node
   ${catkin_LIBRARIES}
+  gtsam
+  gtsam_unstable
 )
 
 add_executable(px4ctrl_node 
@@ -52,6 +56,8 @@ add_dependencies(px4ctrl_node quadrotor_msgs)
 
 target_link_libraries(px4ctrl_node
   ${catkin_LIBRARIES}
+  gtsam 
+  gtsam_unstable
 )
 
 catkin_install_python(PROGRAMS thrust_calibrate_scrips/thrust_calibrate.py

@@ -67,7 +67,7 @@ class Acc_Data_t
       acc[0] = msg.accel.linear.x;
       acc[1] = msg.accel.linear.y;
       acc[2] = msg.accel.linear.z;
-      std::cout << "acc: [ " << acc.x() << ", " << acc.y() << ", " << acc.z() << " ]" << std::endl;
+      // std::cout << "acc: [ " << acc.x() << ", " << acc.y() << ", " << acc.z() << " ]" << std::endl;
     }
 };
 

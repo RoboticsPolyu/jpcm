@@ -299,12 +299,16 @@ void PX4CtrlFSM::process()
 		break;
 	}
 
+	// Eigen::Vector3d linear_acc 
+	//	= acc_data.acc + odom_data.q.inverse().toRotationMatrix()* Eigen::Vector3d(0, 0, param.gra);
+	// imu_data.a = linear_acc;
+
 	// STEP2: estimate thrust model
 	if (state == AUTO_HOVER || state == CMD_CTRL)
 	{
 		// controller.estimateThrustModel(imu_data.a, bat_data.volt, param);
-		controller.estimateThrustModel(imu_data.a,param);
-
+		controller.estimateThrustModel(imu_data.a, param);
+		// controller.set_hover_thrust(hover_thrust);
 	}
 
 	// STEP3: solve and update new control commands
