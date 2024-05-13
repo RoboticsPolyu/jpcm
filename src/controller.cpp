@@ -27,7 +27,7 @@ quadrotor_msgs::Px4ctrlDebug LinearControl::calculateControl(const Desired_State
   /* WRITE YOUR CODE HERE */
   //compute disired acceleration
   gtsam::Rot3 Rc(odom.q);
-  Eigen::Vector3d des_acc(0.0, 0.0, 0.0);
+  Eigen::Vector3d des_acc(0.0, 0.0, 0.0); // des_acc corresponding to collective thrust in the world coordinate system
   Eigen::Vector3d Kp, Kv, KR, KDrag;
   Kp << param_.gain.Kp0, param_.gain.Kp1, param_.gain.Kp2;
   Kv << param_.gain.Kv0, param_.gain.Kv1, param_.gain.Kv2;
@@ -36,7 +36,7 @@ quadrotor_msgs::Px4ctrlDebug LinearControl::calculateControl(const Desired_State
   float mass = param_.mass;
   des_acc = des.a + Kv.asDiagonal() * (des.v - odom.v) + Kp.asDiagonal() * (des.p - odom.p);
   des_acc += Eigen::Vector3d(0, 0, param_.gra); // * odom.q * e3
-  des_acc += - Rc.matrix() * KDrag.asDiagonal() * Rc.inverse().matrix() * odom.v / mass;
+  des_acc += Rc.matrix() * KDrag.asDiagonal() * Rc.inverse().matrix() * odom.v / mass;
 
   // std::cout << "des_acc: [ " << des_acc << " ], des_a: [ " << des.a << " ], des_v: [ " << des.v << " ], des_p: [ " << des.p << std::endl;
   
@@ -100,8 +100,8 @@ double LinearControl::computeDesiredCollectiveThrustSignal(const Eigen::Vector3d
   double throttle_percentage(0.0);
   
   /* compute throttle, thr2acc has been estimated before */
-  throttle_percentage = des_acc(2) / thr2acc_;
-
+  throttle_percentage = des_acc.norm() / thr2acc_;
+  throttle_percentage = limit_value(param_.thr_map.thrust_upper_bound, throttle_percentage, param_.thr_map.thrust_lower_bound);
   return throttle_percentage;
 }
 
@@ -159,6 +159,24 @@ void LinearControl::resetThrustMapping(void)
 {
   thr2acc_ = param_.gra / param_.thr_map.hover_percentage;
   P_ = 1e6;
+}
+
+
+double LinearControl::limit_value(double upper_bound, double input, double lower_bound)
+{
+  if(upper_bound <= lower_bound)
+  {
+    std::cout << "Warning: upper_bound <= lower_bound\n";
+  }
+  if(input > upper_bound)
+  {
+    input = upper_bound;
+  }
+  if(input < lower_bound)
+  {
+    input = lower_bound;
+  }
+  return input;
 }
 
 

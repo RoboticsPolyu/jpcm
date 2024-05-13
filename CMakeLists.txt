@@ -4,7 +4,7 @@ project(px4ctrl)
 set(CMAKE_VERBOSE_MAKEFILE "false")
 
 set(CMAKE_BUILD_TYPE "Release")
-set(CMAKE_CXX_FLAGS "-std=c++11")
+set(CMAKE_CXX_FLAGS "-std=c++14")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -Wall -g")
 
 find_package(catkin REQUIRED COMPONENTS
@@ -19,7 +19,8 @@ find_package(catkin REQUIRED COMPONENTS
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 find_package(Eigen3 REQUIRED) 
-find_package(GTSAM REQUIRED)
+find_package(GTSAM 4 REQUIRED)
+find_package(yaml-cpp)
 
 catkin_package(
 )
@@ -30,10 +31,11 @@ include_directories(
   ${GTSAM_INCLUDE_DIR}
   include/${PROJECT_NAME}
   include
+  ${YAML_CPP_INCLUDE_DIRS}
 )
 
 add_executable(odom_node        
-  src/odo_node.cpp
+  src/odom_node.cpp
 )
 
 add_dependencies(odom_node quadrotor_msgs geometry_msgs)
@@ -42,6 +44,7 @@ target_link_libraries(odom_node
   ${catkin_LIBRARIES}
   gtsam
   gtsam_unstable
+  ${YAML_CPP_LIBRARIES}
 )
 
 add_executable(px4ctrl_node 
@@ -58,6 +61,7 @@ target_link_libraries(px4ctrl_node
   ${catkin_LIBRARIES}
   gtsam 
   gtsam_unstable
+  ${YAML_CPP_LIBRARIES}
 )
 
 catkin_install_python(PROGRAMS thrust_calibrate_scrips/thrust_calibrate.py

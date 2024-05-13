@@ -56,7 +56,17 @@ void Parameter_t::config_from_ros_handle(const ros::NodeHandle &nh)
 	read_essential_param(nh, "thrust_model/K3", thr_map.K3);
 	read_essential_param(nh, "thrust_model/accurate_thrust_model", thr_map.accurate_thrust_model);
 	read_essential_param(nh, "thrust_model/hover_percentage", thr_map.hover_percentage);
+	read_essential_param(nh, "thrust_model/thrust_upper_bound", thr_map.thrust_upper_bound);
+	read_essential_param(nh, "thrust_model/thrust_lower_bound", thr_map.thrust_lower_bound);
 	
+	read_essential_param(nh, "qw", qw);
+	read_essential_param(nh, "qw", qx);
+	read_essential_param(nh, "qw", qy);
+	read_essential_param(nh, "qw", qz);
+	read_essential_param(nh, "qw", x);
+	read_essential_param(nh, "qw", y);
+	read_essential_param(nh, "qw", z);
+
 
 	max_angle /= (180.0 / M_PI);
 

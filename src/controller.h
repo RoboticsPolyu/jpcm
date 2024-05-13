@@ -12,26 +12,11 @@
 #include "input.h"
 #include <Eigen/Dense>
 
+#include <gtsam/geometry/Point3.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Quaternion.h>
 #include <gtsam/geometry/Rot3.h>
-#include <gtsam/inference/Symbol.h>
-#include <gtsam/navigation/ImuFactor.h>
-#include <gtsam/navigation/NavState.h>
-#include <gtsam/navigation/PreintegrationBase.h>
-#include <gtsam/nonlinear/ISAM2.h>
-#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
-#include <gtsam/nonlinear/LevenbergMarquardtParams.h>
-#include <gtsam/nonlinear/Marginals.h>
-#include <gtsam/nonlinear/NonlinearFactor.h>
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam/nonlinear/NonlinearOptimizer.h>
-#include <gtsam/nonlinear/Values.h>
-#include <gtsam/slam/BetweenFactor.h>
-#include <gtsam/slam/PriorFactor.h>
-#include <gtsam/navigation/CombinedImuFactor.h>
-#include <gtsam/navigation/GPSFactor.h>
-#include <gtsam/navigation/ImuFactor.h>
+
 
 struct Desired_State_t
 {
@@ -99,6 +84,7 @@ private:
 
   double computeDesiredCollectiveThrustSignal(const Eigen::Vector3d &des_acc);
   double fromQuaternion2yaw(Eigen::Quaterniond q);
+  double limit_value(double upper_bound,  double input, double lower_bound);
 };
 
 

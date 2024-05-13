@@ -38,6 +38,8 @@ public:
 		double K3;
 		bool accurate_thrust_model;
 		double hover_percentage;
+		double thrust_upper_bound;
+		double thrust_lower_bound;
 	};
 
 	struct RCReverse
@@ -72,6 +74,8 @@ public:
 	double max_manual_vel;
 	double low_voltage;
 
+	double qw, qx, qy, qz, x, y, z;
+	
 	bool use_bodyrate_ctrl;
 	// bool print_dbg;
 

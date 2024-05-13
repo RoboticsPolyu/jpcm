@@ -95,8 +95,8 @@ void RC_Data_t::feed(mavros_msgs::RCInConstPtr pMsg)
 
     //std::cout << "mode: [ " << mode << " ]" << std::endl;
     //std::cout << "gear: [ " << gear << " ]" << std::endl;
-    std::cout << "is hover mode: " << is_hover_mode << std::endl;
-    std::cout << "is command mode: " << is_command_mode << std::endl;
+    // std::cout << "is hover mode: " << is_hover_mode << std::endl;
+    // std::cout << "is command mode: " << is_command_mode << std::endl;
 
     last_mode = mode;
     last_gear = gear;
