@@ -13,6 +13,7 @@ public:
 		double Kvi0, Kvi1, Kvi2;
 		double Kvd0, Kvd1, Kvd2;
 		double KAngR, KAngP, KAngY;
+		double PErrMax, VErrMax;
 	};
 
 	struct RotorDrag

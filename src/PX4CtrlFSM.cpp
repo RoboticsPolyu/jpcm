@@ -405,6 +405,7 @@ Desired_State_t PX4CtrlFSM::get_hover_des()
 	des.v = Eigen::Vector3d::Zero();
 	des.a = Eigen::Vector3d::Zero();
 	des.j = Eigen::Vector3d::Zero();
+	des.w = Eigen::Vector3d::Zero();
 	des.yaw = hover_pose(3);
 	des.yaw_rate = 0.0;
 
@@ -418,6 +419,7 @@ Desired_State_t PX4CtrlFSM::get_cmd_des()
 	des.v = cmd_data.v;
 	des.a = cmd_data.a;
 	des.j = cmd_data.j;
+	des.w = cmd_data.w;
 	des.yaw = cmd_data.yaw;
 	des.yaw_rate = cmd_data.yaw_rate;
 

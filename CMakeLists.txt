@@ -34,6 +34,8 @@ include_directories(
   ${YAML_CPP_INCLUDE_DIRS}
 )
 
+include_directories("/home/amov/Fast250/devel/include")
+
 add_executable(odom_node        
   src/odom_node.cpp
 )

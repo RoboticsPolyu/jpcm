@@ -18,6 +18,8 @@ void Parameter_t::config_from_ros_handle(const ros::NodeHandle &nh)
 	read_essential_param(nh, "gain/KAngR", gain.KAngR);
 	read_essential_param(nh, "gain/KAngP", gain.KAngP);
 	read_essential_param(nh, "gain/KAngY", gain.KAngY);
+	read_essential_param(nh, "gain/PErrMax", gain.PErrMax);
+	read_essential_param(nh, "gain/VErrMax", gain.VErrMax);
 
 	read_essential_param(nh, "rotor_drag/x", rt_drag.x);
 	read_essential_param(nh, "rotor_drag/y", rt_drag.y);

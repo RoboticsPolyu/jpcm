@@ -25,6 +25,7 @@ struct Desired_State_t
 	Eigen::Vector3d a;
 	Eigen::Vector3d j;
 	Eigen::Quaterniond q;
+	Eigen::Vector3d w;
 	double yaw;
 	double yaw_rate;
 
@@ -85,6 +86,7 @@ private:
   double computeDesiredCollectiveThrustSignal(const Eigen::Vector3d &des_acc);
   double fromQuaternion2yaw(Eigen::Quaterniond q);
   double limit_value(double upper_bound,  double input, double lower_bound);
+	Eigen::Vector3d limit_err(const Eigen::Vector3d err, const double p_err_max);
 };
 
 

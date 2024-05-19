@@ -21,7 +21,7 @@ auto_takeoff_land:
     enable: true
     enable_auto_arm: true
     no_RC: false
-    takeoff_height: 1.0 # m
+    takeoff_height: 1.5 # m
     takeoff_land_speed: 0.3 # m/s
 
 thrust_model: # The model that maps thrust signal u(0~1) to real thrust force F(Unit:N): F=K1*Voltage^K2*(K3*u^2+(1-K3)*u). 
@@ -33,17 +33,17 @@ thrust_model: # The model that maps thrust signal u(0~1) to real thrust force F(
     K3: 0.6786 # Needs precise calibration! K3 equals THR_MDL_FAC in https://docs.px4.io/master/en/config_mc/pid_tuning_guide_multicopter.html.
     # approximate thrust mapping parameters
     hover_percentage: 0.23  # Thrust percentage in Stabilize/Arco mode # *
-    thrust_upper_bound: 0.70
+    thrust_upper_bound: 0.35
     thrust_lower_bound: 0.00
     
 gain: 
-    # Cascade PID controller. Recommend to read the code.
-    Kp0: 2.5
-    Kp1: 2.5 
-    Kp2: 2.5
-    Kv0: 2.0
-    Kv1: 2.0
-    Kv2: 2.0
+    # Thrust PID
+    Kp0: 10.0
+    Kp1: 10.0 
+    Kp2: 15.0
+    Kv0: 4.0
+    Kv1: 4.0
+    Kv2: 6.0
     # ↓↓↓ No use now --
     Kvi0: 0.0
     Kvi1: 0.0
@@ -52,20 +52,23 @@ gain:
     Kvd1: 0.0
     Kvd2: 0.0
     # ↓↓↓ Only used in rate control mode.
-    KAngR: 5.0
-    KAngP: 5.0
-    KAngY: 5.0
+    KAngR: 6.0
+    KAngP: 6.0
+    KAngY: 4.0
+    # max error
+    PErrMax: 0.5
+    VErrMax: 1.0
 
 rotor_drag:  
     x: 0.274  # The reduced acceleration on each axis caused by rotor drag. Unit:(m*s^-2)/(m*s^-1).
     y: 0.257  # Same as above
-    z: 0.277  # Same as above
+    z: 0.000  # Same as above
     k_thrust_horz: 0.0 # Set to 0 recommended... --
 
 msg_timeout:
     odom: 0.5
     rc:   0.5
-    cmd:  0.5
+    cmd:  0.1
     imu:  0.5
     bat:  0.5
 
