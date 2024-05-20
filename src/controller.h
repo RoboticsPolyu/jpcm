@@ -5,6 +5,7 @@
 #ifndef __CONTROLLER_H
 #define __CONTROLLER_H
 
+#include <fstream>
 #include <mavros_msgs/AttitudeTarget.h>
 #include <quadrotor_msgs/Px4ctrlDebug.h>
 #include <queue>
@@ -57,10 +58,11 @@ struct Controller_Output_t
 };
 
 
-class LinearControl
+class SE3Control
 {
 public:
-  LinearControl(Parameter_t &);
+  SE3Control(Parameter_t &);
+  ~SE3Control();
   quadrotor_msgs::Px4ctrlDebug calculateControl(const Desired_State_t &des,
       const Odom_Data_t &odom,
       const Imu_Data_t &imu, 
@@ -86,7 +88,10 @@ private:
   double computeDesiredCollectiveThrustSignal(const Eigen::Vector3d &des_acc);
   double fromQuaternion2yaw(Eigen::Quaterniond q);
   double limit_value(double upper_bound,  double input, double lower_bound);
-	Eigen::Vector3d limit_err(const Eigen::Vector3d err, const double p_err_max);
+  Eigen::Vector3d limit_err(const Eigen::Vector3d err, const double p_err_max);
+
+  std::ofstream log_;
+  
 };
 
 

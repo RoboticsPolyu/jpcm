@@ -5,22 +5,30 @@ using namespace std;
 
 
 
-double LinearControl::fromQuaternion2yaw(Eigen::Quaterniond q)
+double SE3Control::fromQuaternion2yaw(Eigen::Quaterniond q)
 {
   double yaw = atan2(2 * (q.x()*q.y() + q.w()*q.z()), q.w()*q.w() + q.x()*q.x() - q.y()*q.y() - q.z()*q.z());
   return yaw;
 }
 
-LinearControl::LinearControl(Parameter_t &param) : param_(param)
+SE3Control::SE3Control(Parameter_t &param) : param_(param)
 {
   resetThrustMapping();
+  time_t now = time(NULL);
+	tm* t = localtime(&now);
+
+	// 将信息输出到字符串流
+	stringstream ss; ss << "/home/amov/output/controller_log_";
+	ss << t->tm_year + 1900 << "." << t->tm_mon + 1 << "." << t->tm_mday << "." << t->tm_hour << "." << t->tm_min << "." << t->tm_sec << ".txt";
+  std::cout << " -- log file:" << ss.str() << std::endl;
+  log_.open(ss.str(), std::ios::out);
 }
 
 /* 
  * compute u.thrust and u.q, controller gains and other parameters are in param_ 
  * Differential-Flatness Based Controller (DFBC) Subject to Aerodynamics Drag Force
  */
-quadrotor_msgs::Px4ctrlDebug LinearControl::calculateControl(const Desired_State_t &des,
+quadrotor_msgs::Px4ctrlDebug SE3Control::calculateControl(const Desired_State_t &des,
     const Odom_Data_t &odom,
     const Imu_Data_t &imu, 
     Controller_Output_t &u)
@@ -90,9 +98,9 @@ quadrotor_msgs::Px4ctrlDebug LinearControl::calculateControl(const Desired_State
   u.q = Eigen::Quaterniond(R);
   gtsam::Rot3 Rd(u.q);
   u.bodyrates = KR.asDiagonal()* gtsam::Rot3::Logmap(Rc.inverse() * Rd) + des.w;
-  std::cout << " -- cur_p [ " << odom.p.transpose() << " ], cur_v: [ " << odom.v.transpose() << std::endl;
-  std::cout << " -- des_acc: [ " << des_acc.transpose() << " ], des_a: [ " << des.a.transpose() << " ], des_v: [ " << des.v.transpose() << " ], des_p: [ " << des.p.transpose() << std::endl;
-  std::cout << " -- control u: [ " << u.thrust << " ], body_rate: [ " << u.bodyrates.transpose() << std::endl;
+  log_ << " -- cur_p [ " << odom.p.transpose() << " ], cur_v: [ " << odom.v.transpose() << std::endl;
+  log_ << " -- des_acc: [ " << des_acc.transpose() << " ], des_a: [ " << des.a.transpose() << " ], des_v: [ " << des.v.transpose() << " ], des_p: [ " << des.p.transpose() << std::endl;
+  log_ << " -- control u: [ " << u.thrust << " ], body_rate: [ " << u.bodyrates.transpose() << std::endl;
   /* WRITE YOUR CODE HERE */
 
   //used for debug
@@ -114,8 +122,7 @@ quadrotor_msgs::Px4ctrlDebug LinearControl::calculateControl(const Desired_State
   debug_msg_.des_q_w = u.q.w();
   
   debug_msg_.des_thr = u.thrust;
- 
-  // std::cout << "thr2acc: [ " << thr2acc_ << " ], thrust : [ " << u.thrust << " ]" << std::endl; 
+
   // Used for thrust-accel mapping estimation
   timed_thrust_.push(std::pair<ros::Time, double>(ros::Time::now(), u.thrust));
   while (timed_thrust_.size() > 100)
@@ -128,7 +135,7 @@ quadrotor_msgs::Px4ctrlDebug LinearControl::calculateControl(const Desired_State
 /*
   compute throttle percentage 
 */
-double LinearControl::computeDesiredCollectiveThrustSignal(const Eigen::Vector3d &des_acc)
+double SE3Control::computeDesiredCollectiveThrustSignal(const Eigen::Vector3d &des_acc)
 {
   double throttle_percentage(0.0);
   
@@ -138,7 +145,7 @@ double LinearControl::computeDesiredCollectiveThrustSignal(const Eigen::Vector3d
   return throttle_percentage;
 }
 
-bool  LinearControl::estimateThrustModel(const Eigen::Vector3d &est_a, const Parameter_t &param)
+bool  SE3Control::estimateThrustModel(const Eigen::Vector3d &est_a, const Parameter_t &param)
 {
   ros::Time t_now = ros::Time::now();
   while (timed_thrust_.size() >= 1)
@@ -180,18 +187,18 @@ bool  LinearControl::estimateThrustModel(const Eigen::Vector3d &est_a, const Par
   return false;
 }
 
-void LinearControl::resetThrustMapping(void)
+void SE3Control::resetThrustMapping(void)
 {
   thr2acc_ = param_.gra / param_.thr_map.hover_percentage;
   P_ = 1e6;
 }
 
 
-double LinearControl::limit_value(double upper_bound, double input, double lower_bound)
+double SE3Control::limit_value(double upper_bound, double input, double lower_bound)
 {
   if(upper_bound <= lower_bound)
   {
-    std::cout << "Warning: upper_bound <= lower_bound\n";
+    log_ << "Warning: upper_bound <= lower_bound\n";
   }
   if(input > upper_bound)
   {
@@ -204,7 +211,12 @@ double LinearControl::limit_value(double upper_bound, double input, double lower
   return input;
 }
 
-Eigen::Vector3d LinearControl::limit_err(const Eigen::Vector3d err, const double p_err_max)
+SE3Control::~SE3Control()
+{
+  log_.close();
+}
+
+Eigen::Vector3d SE3Control::limit_err(const Eigen::Vector3d err, const double p_err_max)
 {
   Eigen::Vector3d r_err(0, 0, 0);
   for(uint i = 0; i < 3; i++)
