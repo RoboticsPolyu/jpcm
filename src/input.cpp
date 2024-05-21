@@ -254,9 +254,6 @@ void Command_Data_t::feed(quadrotor_msgs::PositionCommandConstPtr pMsg)
     w(1) = msg.kx[1];
     w(2) = msg.kx[2];
 
-
-    std::cout << " -- anguler speed = " << w.transpose() << std::endl;
-
     yaw = uav_utils::normalize_angle(msg.yaw);
     yaw_rate = msg.yaw_dot;
 }

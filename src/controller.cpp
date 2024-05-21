@@ -60,7 +60,7 @@ quadrotor_msgs::Px4ctrlDebug SE3Control::calculateControl(const Desired_State_t 
   // }
   // else
   // {
-  u.thrust = computeDesiredCollectiveThrustSignal(des_acc);
+  u.thrust = computeDesiredCollectiveThrustSignal(des_acc, odom.v);
   // }
 
   Eigen::Vector3d force = des_acc * param_.mass;
@@ -135,12 +135,12 @@ quadrotor_msgs::Px4ctrlDebug SE3Control::calculateControl(const Desired_State_t 
 /*
   compute throttle percentage 
 */
-double SE3Control::computeDesiredCollectiveThrustSignal(const Eigen::Vector3d &des_acc)
+double SE3Control::computeDesiredCollectiveThrustSignal(const Eigen::Vector3d &des_acc, const Eigen::Vector3d &v)
 {
   double throttle_percentage(0.0);
   
   /* compute throttle, thr2acc has been estimated before */
-  throttle_percentage = des_acc.norm() / thr2acc_;
+  throttle_percentage = (des_acc.norm() - param_.rt_drag.k_thrust_horz * (pow(v.x(), 2.0) + pow(v.y(), 2.0)) / param_.mass) / thr2acc_;
   throttle_percentage = limit_value(param_.thr_map.thrust_upper_bound, throttle_percentage, param_.thr_map.thrust_lower_bound);
   return throttle_percentage;
 }

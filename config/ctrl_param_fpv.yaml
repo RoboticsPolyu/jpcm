@@ -63,7 +63,7 @@ rotor_drag:
     x: 0.274  # The reduced acceleration on each axis caused by rotor drag. Unit:(m*s^-2)/(m*s^-1).
     y: 0.257  # Same as above
     z: 0.000  # Same as above
-    k_thrust_horz: 0.0 # Set to 0 recommended... --
+    k_thrust_horz: 0.01 # Set to 0 recommended... --
 
 msg_timeout:
     odom: 0.5
