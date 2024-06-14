@@ -49,7 +49,7 @@ quadrotor_msgs::Px4ctrlDebug SE3Control::calculateControl(const Desired_State_t 
   KR << param_.gain.KAngR, param_.gain.KAngP, param_.gain.KAngY;
   KDrag << param_.rt_drag.x, param_.rt_drag.y, param_.rt_drag.z;
   float mass = param_.mass;
-  des_acc = des.a + Kv.asDiagonal() * limit_err(des.v - odom.v, param_.gain.PErrMax) + Kp.asDiagonal() * limit_err(des.p - subtract - odom.p, param_.gain.VErrMax);
+  des_acc = des.a + Kv.asDiagonal() * limit_err(des.v - odom.v, param_.gain.VErrMax) + Kp.asDiagonal() * limit_err(des.p - subtract - odom.p, param_.gain.PErrMax);
   des_acc += Eigen::Vector3d(0, 0, param_.gra); // * odom.q * e3
   des_acc += Rc.matrix() * KDrag.asDiagonal() * Rc.inverse().matrix() * odom.v / mass;
   
