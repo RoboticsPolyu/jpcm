@@ -87,7 +87,7 @@ private:
 	Desired_State_t get_cmd_des();
 
 	// ---- auto takeoff/land ----
-	void motors_idling(const Imu_Data_t &imu, Controller_Output_t &u);
+	void motors_idling(const Imu_Data_t &imu, Controller_Output_t &thr_bodyrate_u);
 	void land_detector(const State_t state, const Desired_State_t &des, const Odom_Data_t &odom); // Detect landing 
 	void set_start_pose_for_takeoff_land(const Odom_Data_t &odom);
 	Desired_State_t get_rotor_speed_up_des(const ros::Time now);
@@ -101,8 +101,8 @@ private:
 	bool toggle_arm_disarm(bool arm); // It will only try to toggle once, so not blocked.
 	void reboot_FCU();
 
-	void publish_bodyrate_ctrl(const Controller_Output_t &u, const ros::Time &stamp);
-	void publish_attitude_ctrl(const Controller_Output_t &u, const ros::Time &stamp);
+	void publish_bodyrate_ctrl(const Controller_Output_t &thr_bodyrate_u, const ros::Time &stamp);
+	void publish_attitude_ctrl(const Controller_Output_t &thr_bodyrate_u, const ros::Time &stamp);
 	void publish_trigger(const nav_msgs::Odometry &odom_msg);
 };
 

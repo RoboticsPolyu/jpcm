@@ -39,7 +39,7 @@ void PX4CtrlFSM::process()
 {
 
 	ros::Time now_time = ros::Time::now();
-	Controller_Output_t u;
+	Controller_Output_t thr_bodyrate_u;
 	Desired_State_t des(odom_data);
 	bool rotor_low_speed_during_land = false;
 
@@ -314,11 +314,11 @@ void PX4CtrlFSM::process()
 	// STEP3: solve and update new control commands
 	if (rotor_low_speed_during_land) // used at the start of auto takeoff
 	{
-		motors_idling(imu_data, u);
+		motors_idling(imu_data, thr_bodyrate_u);
 	}
 	else
 	{
-		debug_msg = controller.calculateControl(des, odom_data, imu_data, u);
+		debug_msg = controller.calculateControl(des, odom_data, imu_data, thr_bodyrate_u);
 		debug_msg.header.stamp = now_time;
 		debug_pub.publish(debug_msg);
 	}
@@ -326,11 +326,11 @@ void PX4CtrlFSM::process()
 	// STEP4: publish control commands to mavros
 	if (param.use_bodyrate_ctrl)
 	{
-		publish_bodyrate_ctrl(u, now_time);
+		publish_bodyrate_ctrl(thr_bodyrate_u, now_time);
 	}
 	else
 	{
-		publish_attitude_ctrl(u, now_time);
+		publish_attitude_ctrl(thr_bodyrate_u, now_time);
 	}
 
 	// STEP5: Detect if the drone has landed
@@ -345,11 +345,11 @@ void PX4CtrlFSM::process()
 	takeoff_land_data.triggered = false;
 }
 
-void PX4CtrlFSM::motors_idling(const Imu_Data_t &imu, Controller_Output_t &u)
+void PX4CtrlFSM::motors_idling(const Imu_Data_t &imu, Controller_Output_t &thr_bodyrate_u)
 {
-	u.q = imu.q;
-	u.bodyrates = Eigen::Vector3d::Zero();
-	u.thrust = 0.04;
+	thr_bodyrate_u.q = imu.q;
+	thr_bodyrate_u.bodyrates = Eigen::Vector3d::Zero();
+	thr_bodyrate_u.thrust = 0.04;
 }
 
 void PX4CtrlFSM::land_detector(const State_t state, const Desired_State_t &des, const Odom_Data_t &odom)
@@ -543,7 +543,7 @@ bool PX4CtrlFSM::recv_new_odom()
 	return false;
 }
 
-void PX4CtrlFSM::publish_bodyrate_ctrl(const Controller_Output_t &u, const ros::Time &stamp)
+void PX4CtrlFSM::publish_bodyrate_ctrl(const Controller_Output_t &thr_bodyrate_u, const ros::Time &stamp)
 {
 	mavros_msgs::AttitudeTarget msg;
 
@@ -552,16 +552,16 @@ void PX4CtrlFSM::publish_bodyrate_ctrl(const Controller_Output_t &u, const ros::
 
 	msg.type_mask = mavros_msgs::AttitudeTarget::IGNORE_ATTITUDE;
 
-	msg.body_rate.x = u.bodyrates.x();
-	msg.body_rate.y = u.bodyrates.y();
-	msg.body_rate.z = u.bodyrates.z();
+	msg.body_rate.x = thr_bodyrate_u.bodyrates.x();
+	msg.body_rate.y = thr_bodyrate_u.bodyrates.y();
+	msg.body_rate.z = thr_bodyrate_u.bodyrates.z();
 
-	msg.thrust = u.thrust;
+	msg.thrust = thr_bodyrate_u.thrust;
 
 	ctrl_FCU_pub.publish(msg);
 }
 
-void PX4CtrlFSM::publish_attitude_ctrl(const Controller_Output_t &u, const ros::Time &stamp)
+void PX4CtrlFSM::publish_attitude_ctrl(const Controller_Output_t &thr_bodyrate_u, const ros::Time &stamp)
 {
 	mavros_msgs::AttitudeTarget msg;
 
@@ -572,12 +572,12 @@ void PX4CtrlFSM::publish_attitude_ctrl(const Controller_Output_t &u, const ros::
 					mavros_msgs::AttitudeTarget::IGNORE_PITCH_RATE |
 					mavros_msgs::AttitudeTarget::IGNORE_YAW_RATE;
 
-	msg.orientation.x = u.q.x();
-	msg.orientation.y = u.q.y();
-	msg.orientation.z = u.q.z();
-	msg.orientation.w = u.q.w();
+	msg.orientation.x = thr_bodyrate_u.q.x();
+	msg.orientation.y = thr_bodyrate_u.q.y();
+	msg.orientation.z = thr_bodyrate_u.q.z();
+	msg.orientation.w = thr_bodyrate_u.q.w();
 
-	msg.thrust = u.thrust;
+	msg.thrust = thr_bodyrate_u.thrust;
 
 	ctrl_FCU_pub.publish(msg);
 }

@@ -24,7 +24,7 @@ auto_takeoff_land:
     takeoff_height: 1.5 # m
     takeoff_land_speed: 0.3 # m/s
 
-thrust_model: # The model that maps thrust signal u(0~1) to real thrust force F(Unit:N): F=K1*Voltage^K2*(K3*u^2+(1-K3)*u). 
+thrust_model: # The model that maps thrust signal thr_bodyrate_u(0~1) to real thrust force F(Unit:N): F=K1*Voltage^K2*(K3*thr_bodyrate_u^2+(1-K3)*thr_bodyrate_u). 
     print_value: false # display the value of “thr_scale_compensate” or “hover_percentage” during thrust model estimating.
     accurate_thrust_model: false  # This can always enabled if don't require accurate control performance :-)
     # accurate thrust mapping parameters
@@ -60,10 +60,10 @@ gain:
     VErrMax: 1.0
 
 rotor_drag:  
-    x: 0.274  # The reduced acceleration on each axis caused by rotor drag. Unit:(m*s^-2)/(m*s^-1).
-    y: 0.257  # Same as above
-    z: 0.000  # Same as above
-    k_thrust_horz: 0.01 # Set to 0 recommended... --
+    x: 0.24  # The reduced acceleration on each axis caused by rotor drag. Unit:(m*s^-2)/(m*s^-1).
+    y: 0.22  # Same as above
+    z: 0.0  # Same as above
+    k_thrust_horz: 0.000 #0.007 # Set to 0 recommended... --
 
 msg_timeout:
     odom: 0.5

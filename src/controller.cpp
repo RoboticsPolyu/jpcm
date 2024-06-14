@@ -25,13 +25,13 @@ SE3Control::SE3Control(Parameter_t &param) : param_(param)
 }
 
 /* 
- * compute u.thrust and u.q, controller gains and other parameters are in param_ 
+ * compute thr_bodyrate_u.thrust and thr_bodyrate_u.q, controller gains and other parameters are in param_ 
  * Differential-Flatness Based Controller (DFBC) Subject to Aerodynamics Drag Force
  */
 quadrotor_msgs::Px4ctrlDebug SE3Control::calculateControl(const Desired_State_t &des,
     const Odom_Data_t &odom,
     const Imu_Data_t &imu, 
-    Controller_Output_t &u)
+    Controller_Output_t &thr_bodyrate_u)
 {
   /* WRITE YOUR CODE HERE */
   //compute disired acceleration
@@ -56,16 +56,16 @@ quadrotor_msgs::Px4ctrlDebug SE3Control::calculateControl(const Desired_State_t 
   // check thrust 
   // if((Rc.inverse().matrix() * des_acc)[2] < 0)
   // {
-  //   u.thrust = 0.01f;
+  //   thr_bodyrate_u.thrust = 0.01f;
   // }
   // else
   // {
-  u.thrust = computeDesiredCollectiveThrustSignal(des_acc, odom.v);
+  thr_bodyrate_u.thrust = computeDesiredCollectiveThrustSignal(des_acc, odom.v);
   // }
 
   Eigen::Vector3d force = des_acc * param_.mass;
 
-  // Limit control angle to 90 degree
+  // Limit control angle to 80 degree
   double          theta = 80.0f / 180.0f * M_PI;
   double          c     = cos(theta);
   Eigen::Vector3d f;
@@ -79,7 +79,7 @@ quadrotor_msgs::Px4ctrlDebug SE3Control::calculateControl(const Desired_State_t 
     double s         = (-B + sqrt(B * B - 4 * A * C)) / (2 * A);
     force.noalias() = s * f + param_.mass * param_.gra * Eigen::Vector3d(0, 0, 1);
   }
-  // Limit control angle to 90 degree
+  // Limit control angle to 80 degree
 
   Eigen::Vector3d b1c, b2c, b3c;
   Eigen::Vector3d b1d(cos(des.yaw), sin(des.yaw), 0);
@@ -95,12 +95,12 @@ quadrotor_msgs::Px4ctrlDebug SE3Control::calculateControl(const Desired_State_t 
   Eigen::Matrix3d R;
   R << b1c, b2c, b3c;
 
-  u.q = Eigen::Quaterniond(R);
-  gtsam::Rot3 Rd(u.q);
-  u.bodyrates = KR.asDiagonal()* gtsam::Rot3::Logmap(Rc.inverse() * Rd) + des.w;
-  log_ << " -- cur_p [ " << odom.p.transpose() << " ], cur_v: [ " << odom.v.transpose() << std::endl;
+  thr_bodyrate_u.q = Eigen::Quaterniond(R);
+  gtsam::Rot3 Rd(thr_bodyrate_u.q);
+  thr_bodyrate_u.bodyrates = KR.asDiagonal()* gtsam::Rot3::Logmap(Rc.inverse() * Rd) + des.w;
+  log_ << " -- cur_p:   [ " << odom.p.transpose() << "  ], cur_v: [ " << odom.v.transpose() << std::endl;
   log_ << " -- des_acc: [ " << des_acc.transpose() << " ], des_a: [ " << des.a.transpose() << " ], des_v: [ " << des.v.transpose() << " ], des_p: [ " << des.p.transpose() << std::endl;
-  log_ << " -- control u: [ " << u.thrust << " ], body_rate: [ " << u.bodyrates.transpose() << std::endl;
+  log_ << " -- control thr_bodyrate_u: [ " << thr_bodyrate_u.thrust << " ], body_rate: [ " << thr_bodyrate_u.bodyrates.transpose() << std::endl;
   /* WRITE YOUR CODE HERE */
 
   //used for debug
@@ -116,15 +116,15 @@ quadrotor_msgs::Px4ctrlDebug SE3Control::calculateControl(const Desired_State_t 
   debug_msg_.des_a_y = des_acc(1);
   debug_msg_.des_a_z = des_acc(2);
   
-  debug_msg_.des_q_x = u.q.x();
-  debug_msg_.des_q_y = u.q.y();
-  debug_msg_.des_q_z = u.q.z();
-  debug_msg_.des_q_w = u.q.w();
+  debug_msg_.des_q_x = thr_bodyrate_u.q.x();
+  debug_msg_.des_q_y = thr_bodyrate_u.q.y();
+  debug_msg_.des_q_z = thr_bodyrate_u.q.z();
+  debug_msg_.des_q_w = thr_bodyrate_u.q.w();
   
-  debug_msg_.des_thr = u.thrust;
+  debug_msg_.des_thr = thr_bodyrate_u.thrust;
 
   // Used for thrust-accel mapping estimation
-  timed_thrust_.push(std::pair<ros::Time, double>(ros::Time::now(), u.thrust));
+  timed_thrust_.push(std::pair<ros::Time, double>(ros::Time::now(), thr_bodyrate_u.thrust));
   while (timed_thrust_.size() > 100)
   {
     timed_thrust_.pop();
