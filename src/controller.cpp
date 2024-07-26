@@ -4,18 +4,259 @@ using namespace gtsam;
 using namespace std;
 
 
+using namespace UAVFactor;
 
-double SE3Control::fromQuaternion2yaw(Eigen::Quaterniond q)
+using symbol_shorthand::S;
+using symbol_shorthand::U;
+using symbol_shorthand::V;
+using symbol_shorthand::X;
+
+quadrotor_msgs::Px4ctrlDebug DFBControl::calculateControl(const Desired_State_t &des, const Odom_Data_t &odom, const Imu_Data_t &imu, 
+    Controller_Output_t &thr_bodyrate_u, CTRL_MODE mode_switch)
+{
+  // calculateControl(des, odom, imu, thr_bodyrate_u);
+
+  bool   timeout  = false;
+  double opt_cost = 0.0f;
+  double thrust   = 0;
+  gtsam::Vector3 bodyrates(0,0,0);
+
+  double thrust2   = 0;
+  gtsam::Vector3 bodyrates2(0,0,0);
+  bool isMPC = 0;
+  // if(des_vec_.size() > 0)
+  // {
+  //     if((des.rcv_stamp - des_vec_[des_vec_.size()-1].rcv_stamp).toSec() > 0.015f 
+  //         || (des.rcv_stamp - des_vec_[des_vec_.size()-1].rcv_stamp).toSec() < 0.001f)
+  //     {
+  //         des_vec_.clear();
+  //         timeout = true;
+  //     }
+  // }
+  // gtsam::Rot3 rot = gtsam::Rot3::identity();
+  // des.q = rot.toQuaternion();
+
+  des_vec_.push_back(des);
+  float hight_thr = 0.30f;
+
+  // DFBControl::calculateControl(des_vec_[0], odom, imu, thr_bodyrate_u);
+  // thrust    = thr_bodyrate_u.thrust;
+  // bodyrates = thr_bodyrate_u.bodyrates;
+
+  if(timeout || mode_switch == DFBC || des_vec_.size() < opt_lens_traj_)
+  {
+    DFBControl::calculateControl(des_vec_[0], odom, imu, thr_bodyrate_u);
+    thrust    = thr_bodyrate_u.thrust;
+    bodyrates = thr_bodyrate_u.bodyrates;
+  }
+  else if(mode_switch == MPC && des_vec_.size() == opt_lens_traj_ ) // && odom.p.z() > hight_thr)
+  {
+    clock_t start, end;
+
+    gtsam::LevenbergMarquardtParams parameters;
+    parameters.absoluteErrorTol = 100;
+    parameters.relativeErrorTol = 1e-2;
+    parameters.maxIterations    = 10;
+    parameters.verbosity        = gtsam::NonlinearOptimizerParams::SILENT;
+    parameters.verbosityLM      = gtsam::LevenbergMarquardtParams::SILENT;
+    graph_.empty();
+
+    std::cout << " --------------------- MPC -------------------- " << std::endl;
+    buildFactorGraph(graph_, initial_value_, des_vec_, odom, dt_);
+    LevenbergMarquardtOptimizer optimizer(graph_, initial_value_, parameters);
+    start = clock();
+    Values result = optimizer.optimize();
+    end = clock();
+    opt_cost = (double)(end-start)/CLOCKS_PER_SEC;
+    float distance = (des_vec_[0].p - odom.p).norm();
+    std::cout << " ---------- Optimize Time: [ " << opt_cost << " ], " << "distance: [ " << distance << " ]" << endl;
+    
+    gtsam::Pose3   i_pose;
+    gtsam::Vector3 vel;
+    gtsam::Vector4 input;
+
+    for (uint32_t ikey = 0; ikey < opt_lens_traj_; ikey++)
+    {
+      std::cout << "--------------------------------- TRAJECTORY CONTROL OPTIMIZATION: "  << ikey << " ---------------------------------" << std::endl;
+      i_pose = result.at<Pose3>(X(ikey));
+      vel = result.at<Vector3>(V(ikey));
+      
+      std::cout << "OPT Translation: "
+              << i_pose.translation() << std::endl;
+    
+      std::cout << "OPT    Rotation: "
+              << Rot3::Logmap(i_pose.rotation()).transpose() << std::endl;
+
+      std::cout << "OPT         VEL: "
+              << vel.transpose() << std::endl;
+
+      if(ikey != opt_lens_traj_ - 1)
+      {
+        input = result.at<gtsam::Vector4>(U(ikey));
+        std::cout << "OPT     INPUT: "
+                << input.transpose() << std::endl;
+      }
+
+    }
+
+    input = result.at<gtsam::Vector4>(U(0));
+    Eigen::Vector3d des_acc(0, 0, input[0]);
+
+    thrust2    = DFBControl::computeDesiredCollectiveThrustSignal(des_acc, odom.v);
+    bodyrates2 = Eigen::Vector3d(input[1], input[2], input[3]);
+
+    thr_bodyrate_u.mpc_thrust    = DFBControl::computeDesiredCollectiveThrustSignal(des_acc, odom.v);
+    thr_bodyrate_u.mpc_bodyrates = Eigen::Vector3d(input[1], input[2], input[3]);
+    isMPC = true;
+  }
+
+  log_ << std::setprecision(19) << des_vec_[0].rcv_stamp.toSec() <<  " " << des_vec_.size() << " "
+       << odom.p.x() << " " << odom.p.y() << " " << odom.p.z() << " " << des_vec_[0].p.x() << " " << des_vec_[0].p.y() << " " << des_vec_[0].p.z() << " "
+       << odom.v.x() << " " << odom.v.y() << " " << odom.v.z() << " " << des_vec_[0].v.x() << " " << des_vec_[0].v.y() << " " << des_vec_[0].v.z() << " "
+       << thrust    << " " 
+       << bodyrates.x() << " " << bodyrates.y() << " " << bodyrates.z() << " " // DBFC
+       << thrust2   << " " 
+       << bodyrates2.x() << " " << bodyrates2.y() << " " << bodyrates2.z() << " " // MPC
+       << opt_cost  << " "
+       << imu.w.x() << " " << imu.w.y() << " " << imu.w.z() << " "
+       << imu.a.x() << " " << imu.a.y() << " " << imu.a.z() << " "
+       << isMPC << " "
+       << std::endl;
+
+  if(des_vec_.size() >= opt_lens_traj_)
+  {
+    des_vec_.erase(des_vec_.begin());
+  }
+
+  return debug_msg_;
+}
+
+void DFBControl::buildFactorGraph(gtsam::NonlinearFactorGraph& _graph, gtsam::Values& _initial_value, const std::vector<Desired_State_t> &des_v, const Odom_Data_t &odom, double dt)
+{
+  std::default_random_engine meas_x_gen;
+  std::default_random_engine meas_y_gen;
+  std::default_random_engine meas_z_gen;
+  
+  std::default_random_engine meas_rx_gen;
+  std::default_random_engine meas_ry_gen;
+  std::default_random_engine meas_rz_gen;
+
+  std::default_random_engine meas_vx_gen;
+  std::default_random_engine meas_vy_gen;
+  std::default_random_engine meas_vz_gen;
+
+  std::normal_distribution<double> position_noise(param_.factor_graph.POS_MEAS_MEAN, param_.factor_graph.POS_MEAS_COV);
+  std::normal_distribution<double> rot_noise     (0, param_.factor_graph.POS_MEAS_COV);
+  std::normal_distribution<double> velocity_noise(0, param_.factor_graph.ROT_MEAS_COV);
+
+  auto input_jerk  = noiseModel::Diagonal::Sigmas(Vector4(param_.factor_graph.INPUT_JERK_T, 
+      param_.factor_graph.INPUT_JERK_M, param_.factor_graph.INPUT_JERK_M, param_.factor_graph.INPUT_JERK_M3));
+
+  auto dynamics_noise = noiseModel::Diagonal::Sigmas((Vector(9) << Vector3::Constant(param_.factor_graph.DYNAMIC_P_COV), 
+      Vector3::Constant(param_.factor_graph.DYNAMIC_R_COV), Vector3::Constant(param_.factor_graph.DYNAMIC_V_COV)).finished());
+  
+  // Initial state noise
+  auto vicon_noise = noiseModel::Diagonal::Sigmas((Vector(6) << Vector3::Constant(param_.factor_graph.ROT_MEAS_COV), Vector3::Constant(param_.factor_graph.PRI_VICON_COV)).finished());
+  auto vel_noise   = noiseModel::Diagonal::Sigmas(Vector3(param_.factor_graph.PRI_VICON_VEL_COV, param_.factor_graph.PRI_VICON_VEL_COV, param_.factor_graph.PRI_VICON_VEL_COV));
+
+  auto ref_predict_vel_noise = noiseModel::Diagonal::Sigmas(Vector3(param_.factor_graph.CONTROL_V_COV, param_.factor_graph.CONTROL_V_COV, param_.factor_graph.CONTROL_V_COV));
+  // auto ref_predict_omega_noise = noiseModel::Diagonal::Sigmas(Vector3(param_.factor_graph.CONTROL_O_COV, param_.factor_graph.CONTROL_O_COV, param_.factor_graph.CONTROL_O_COV));
+  gtsam::NonlinearFactorGraph  graph;
+  gtsam::Values                initial_value;
+
+  graph.empty();
+  initial_value.empty();
+
+  auto clf_sigma = noiseModel::Diagonal::Sigmas(Vector4(1.0, 1.0, 1.0, 1.0));
+  ControlLimitTGyroFactor cntrolLimitTGyroFactor(U(0), clf_sigma, param_.factor_graph.low, param_.factor_graph.high,
+      param_.factor_graph.glow, param_.factor_graph.ghigh, param_.factor_graph.thr, param_.factor_graph.gthr, param_.factor_graph.alpha);
+  graph.add(cntrolLimitTGyroFactor);
+
+  gtsam::Vector3 drag_k(-param_.rt_drag.x, -param_.rt_drag.y, -param_.rt_drag.z);
+
+  for (uint16_t idx = 0; idx < param_.factor_graph.OPT_LENS_TRAJ; idx++)
+  {
+    DynamicsFactorTGyro dynamics_factor(X(idx), V(idx), U(idx), X(idx + 1), V(idx + 1), dt, param_.mass, drag_k, dynamics_noise);
+    graph.add(dynamics_factor);
+    
+    gtsam::Pose3   pose_idx(gtsam::Rot3(des_v[idx].q), des_v[idx].p);
+    gtsam::Vector3 vel_idx   = des_v[idx].v;
+    gtsam::Vector3 omega_idx = des_v[idx].w;
+    
+    // std::cout << "Idx: " << idx << ", ref vel: " << vel_idx.transpose() << std::endl;
+    // std::cout << "ref pos: " << des_v[idx].p.transpose() << std::endl;
+
+    initial_value.insert(X(idx + 1), pose_idx);
+    initial_value.insert(V(idx + 1), vel_idx);
+
+    if(idx != 0)
+    {
+      BetForceMoments bet_FM_factor(U(idx - 1), U(idx), input_jerk);
+      graph.add(bet_FM_factor);
+    }
+    
+    gtsam::Vector4 init_input(10, 0, 0, 0);
+    initial_value.insert(U(idx), init_input);
+
+    gtsam::Vector3 control_r_cov(param_.factor_graph.CONTROL_R1_COV, param_.factor_graph.CONTROL_R2_COV, param_.factor_graph.CONTROL_R3_COV);
+    if(idx == param_.factor_graph.OPT_LENS_TRAJ - 1)
+    {   
+      gtsam::Vector3 final_position_ref(param_.factor_graph.CONTROL_PF_COV_X, param_.factor_graph.CONTROL_PF_COV_Y, param_.factor_graph.CONTROL_PF_COV_Z);
+      auto ref_predict_pose_noise = noiseModel::Diagonal::Sigmas((Vector(6) << control_r_cov, final_position_ref).finished()); 
+      graph.add(gtsam::PriorFactor<gtsam::Pose3>(X(idx + 1), pose_idx, ref_predict_pose_noise));
+      graph.add(gtsam::PriorFactor<gtsam::Vector3>(V(idx + 1), vel_idx, ref_predict_vel_noise));
+    }
+    else
+    {
+      gtsam::Vector3 _position_ref(param_.factor_graph.CONTROL_P_COV_X, param_.factor_graph.CONTROL_P_COV_Y, param_.factor_graph.CONTROL_P_COV_Z);
+      auto ref_predict_pose_noise = noiseModel::Diagonal::Sigmas((Vector(6) << control_r_cov, _position_ref).finished());
+      graph.add(gtsam::PriorFactor<gtsam::Pose3>(X(idx + 1), pose_idx, ref_predict_pose_noise));
+      graph.add(gtsam::PriorFactor<gtsam::Vector3>(V(idx + 1), vel_idx, ref_predict_vel_noise));
+    }
+
+    if (idx == 0)
+    {               
+      gtsam::Vector3 pos_noise     = gtsam::Vector3(position_noise(meas_x_gen), position_noise(meas_y_gen), position_noise(meas_z_gen));
+      gtsam::Vector3 vel_noise_add = gtsam::Vector3(velocity_noise(meas_vx_gen), velocity_noise(meas_vy_gen), velocity_noise(meas_vz_gen));
+      gtsam::Vector3 rot_noise_add = gtsam::Vector3(rot_noise(meas_rx_gen), rot_noise(meas_ry_gen), rot_noise(meas_rz_gen));
+      
+      gtsam::Vector3 pos_add = odom.p + pos_noise;
+      gtsam::Vector3 vel_add = odom.v + vel_noise_add;
+
+      gtsam::Vector3 rot_add = gtsam::Rot3::Logmap(gtsam::Rot3(odom.q)) + rot_noise_add;
+      gtsam::Rot3   rot3_add = gtsam::Rot3::Expmap(rot_add);
+      gtsam::Pose3  pose_add(rot3_add, pos_add);
+
+      // std::cout << "Odom: " << idx << ", vel: " << vel_add.transpose() << std::endl;
+      // std::cout << "pos: " << pos_add.transpose() << std::endl;
+      
+      graph.add(gtsam::PriorFactor<gtsam::Pose3>  (X(idx), pose_add, vicon_noise));
+      graph.add(gtsam::PriorFactor<gtsam::Vector3>(V(idx), vel_add, vel_noise));
+      
+      initial_value.insert(X(idx), pose_add);
+      initial_value.insert(V(idx), vel_add);
+    }
+  }
+
+  _graph = graph;
+  _initial_value = initial_value;
+}
+
+double DFBControl::fromQuaternion2yaw(Eigen::Quaterniond q)
 {
   double yaw = atan2(2 * (q.x()*q.y() + q.w()*q.z()), q.w()*q.w() + q.x()*q.x() - q.y()*q.y() - q.z()*q.z());
   return yaw;
 }
 
-SE3Control::SE3Control(Parameter_t &param) : param_(param)
+DFBControl::DFBControl(Parameter_t &param) : param_(param)
 {
   resetThrustMapping();
   time_t now = time(NULL);
 	tm* t = localtime(&now);
+
+  graph_.empty(); 
+  dt_ = 0.01f; 
+  opt_lens_traj_ = param_.factor_graph.OPT_LENS_TRAJ;
 
 	// 将信息输出到字符串流
 	stringstream ss; ss << "/home/amov/output/controller_log_";
@@ -28,7 +269,7 @@ SE3Control::SE3Control(Parameter_t &param) : param_(param)
  * compute thr_bodyrate_u.thrust and thr_bodyrate_u.q, controller gains and other parameters are in param_ 
  * Differential-Flatness Based Controller (DFBC) Subject to Aerodynamics Drag Force
  */
-quadrotor_msgs::Px4ctrlDebug SE3Control::calculateControl(const Desired_State_t &des,
+quadrotor_msgs::Px4ctrlDebug DFBControl::calculateControl(const Desired_State_t &des,
     const Odom_Data_t &odom,
     const Imu_Data_t &imu, 
     Controller_Output_t &thr_bodyrate_u)
@@ -98,9 +339,9 @@ quadrotor_msgs::Px4ctrlDebug SE3Control::calculateControl(const Desired_State_t 
   thr_bodyrate_u.q = Eigen::Quaterniond(R);
   gtsam::Rot3 Rd(thr_bodyrate_u.q);
   thr_bodyrate_u.bodyrates = KR.asDiagonal()* gtsam::Rot3::Logmap(Rc.inverse() * Rd) + des.w;
-  log_ << " -- cur_p:   [ " << odom.p.transpose() << "  ], cur_v: [ " << odom.v.transpose() << std::endl;
-  log_ << " -- des_acc: [ " << des_acc.transpose() << " ], des_a: [ " << des.a.transpose() << " ], des_v: [ " << des.v.transpose() << " ], des_p: [ " << des.p.transpose() << std::endl;
-  log_ << " -- control thr_bodyrate_u: [ " << thr_bodyrate_u.thrust << " ], body_rate: [ " << thr_bodyrate_u.bodyrates.transpose() << std::endl;
+  // log_ << " -- cur_p:   [ " << odom.p.transpose() << "  ], cur_v: [ " << odom.v.transpose() << std::endl;
+  // log_ << " -- des_acc: [ " << des_acc.transpose() << " ], des_a: [ " << des.a.transpose() << " ], des_v: [ " << des.v.transpose() << " ], des_p: [ " << des.p.transpose() << std::endl;
+  // log_ << " -- control thr_bodyrate_u: [ " << thr_bodyrate_u.thrust << " ], body_rate: [ " << thr_bodyrate_u.bodyrates.transpose() << std::endl;
   /* WRITE YOUR CODE HERE */
 
   //used for debug
@@ -135,7 +376,7 @@ quadrotor_msgs::Px4ctrlDebug SE3Control::calculateControl(const Desired_State_t 
 /*
   compute throttle percentage 
 */
-double SE3Control::computeDesiredCollectiveThrustSignal(const Eigen::Vector3d &des_acc, const Eigen::Vector3d &v)
+double DFBControl::computeDesiredCollectiveThrustSignal(const Eigen::Vector3d &des_acc, const Eigen::Vector3d &v)
 {
   double throttle_percentage(0.0);
   
@@ -145,7 +386,7 @@ double SE3Control::computeDesiredCollectiveThrustSignal(const Eigen::Vector3d &d
   return throttle_percentage;
 }
 
-bool  SE3Control::estimateThrustModel(const Eigen::Vector3d &est_a, const Parameter_t &param)
+bool  DFBControl::estimateThrustModel(const Eigen::Vector3d &est_a, const Parameter_t &param)
 {
   ros::Time t_now = ros::Time::now();
   while (timed_thrust_.size() >= 1)
@@ -187,14 +428,14 @@ bool  SE3Control::estimateThrustModel(const Eigen::Vector3d &est_a, const Parame
   return false;
 }
 
-void SE3Control::resetThrustMapping(void)
+void DFBControl::resetThrustMapping(void)
 {
   thr2acc_ = param_.gra / param_.thr_map.hover_percentage;
   P_ = 1e6;
 }
 
 
-double SE3Control::limit_value(double upper_bound, double input, double lower_bound)
+double DFBControl::limit_value(double upper_bound, double input, double lower_bound)
 {
   if(upper_bound <= lower_bound)
   {
@@ -211,12 +452,12 @@ double SE3Control::limit_value(double upper_bound, double input, double lower_bo
   return input;
 }
 
-SE3Control::~SE3Control()
+DFBControl::~DFBControl()
 {
   log_.close();
 }
 
-Eigen::Vector3d SE3Control::limit_err(const Eigen::Vector3d err, const double p_err_max)
+Eigen::Vector3d DFBControl::limit_err(const Eigen::Vector3d err, const double p_err_max)
 {
   Eigen::Vector3d r_err(0, 0, 0);
   for(uint i = 0; i < 3; i++)

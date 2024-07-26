@@ -69,6 +69,46 @@ void Parameter_t::config_from_ros_handle(const ros::NodeHandle &nh)
 	read_essential_param(nh, "qw", y);
 	read_essential_param(nh, "qw", z);
 
+	read_essential_param(nh, "Factor_graph/LOG_NAME", factor_graph.LOG_NAME);
+
+	read_essential_param(nh, "Factor_graph/PRI_VICON_COV", factor_graph.PRI_VICON_COV);
+	read_essential_param(nh, "Factor_graph/PRI_VICON_VEL_COV", factor_graph.PRI_VICON_VEL_COV);
+
+	read_essential_param(nh, "Factor_graph/CONTROL_P_COV_X", factor_graph.CONTROL_P_COV_X);
+	read_essential_param(nh, "Factor_graph/CONTROL_PF_COV_X", factor_graph.CONTROL_PF_COV_X);
+	read_essential_param(nh, "Factor_graph/CONTROL_P_COV_Y", factor_graph.CONTROL_P_COV_Y);
+	read_essential_param(nh, "Factor_graph/CONTROL_PF_COV_Y", factor_graph.CONTROL_PF_COV_Y);
+	read_essential_param(nh, "Factor_graph/CONTROL_P_COV_Z", factor_graph.CONTROL_P_COV_Z);
+	read_essential_param(nh, "Factor_graph/CONTROL_PF_COV_Z", factor_graph.CONTROL_PF_COV_Z);
+	read_essential_param(nh, "Factor_graph/CONTROL_R1_COV", factor_graph.CONTROL_R1_COV);
+	read_essential_param(nh, "Factor_graph/CONTROL_R2_COV", factor_graph.CONTROL_R2_COV);
+	read_essential_param(nh, "Factor_graph/CONTROL_R3_COV", factor_graph.CONTROL_R3_COV);
+	read_essential_param(nh, "Factor_graph/CONTROL_V_COV", factor_graph.CONTROL_V_COV);
+	read_essential_param(nh, "Factor_graph/DYNAMIC_P_COV", factor_graph.DYNAMIC_P_COV);
+	read_essential_param(nh, "Factor_graph/DYNAMIC_R_COV", factor_graph.DYNAMIC_R_COV);
+	read_essential_param(nh, "Factor_graph/DYNAMIC_V_COV", factor_graph.DYNAMIC_V_COV);
+	
+	read_essential_param(nh, "Factor_graph/INPUT_JERK_T", factor_graph.INPUT_JERK_T);
+	read_essential_param(nh, "Factor_graph/INPUT_JERK_M", factor_graph.INPUT_JERK_M);
+	read_essential_param(nh, "Factor_graph/INPUT_JERK_M3", factor_graph.INPUT_JERK_M3);
+	
+	read_essential_param(nh, "Factor_graph/OPT_LENS_TRAJ", factor_graph.OPT_LENS_TRAJ);
+	read_essential_param(nh, "Factor_graph/WINDOW_SIZE", factor_graph.WINDOW_SIZE);
+
+	read_essential_param(nh, "Factor_graph/CLF_HIGH", factor_graph.high);
+	read_essential_param(nh, "Factor_graph/CLF_LOW", factor_graph.low);
+	read_essential_param(nh, "Factor_graph/CLF_THR", factor_graph.thr);
+
+	read_essential_param(nh, "Factor_graph/G_CLF_HIGH", factor_graph.ghigh);
+	read_essential_param(nh, "Factor_graph/G_CLF_LOW", factor_graph.glow);
+	read_essential_param(nh, "Factor_graph/G_CLF_THR", factor_graph.gthr);
+
+	read_essential_param(nh, "Factor_graph/CLF_ALPHA", factor_graph.alpha);
+
+	read_essential_param(nh, "Factor_graph/POS_MEAS_MEAN", factor_graph.POS_MEAS_MEAN);
+	read_essential_param(nh, "Factor_graph/POS_MEAS_COV", factor_graph.POS_MEAS_COV);
+	read_essential_param(nh, "Factor_graph/VEL_MEAS_COV", factor_graph.VEL_MEAS_COV);
+	read_essential_param(nh, "Factor_graph/ROT_MEAS_COV", factor_graph.ROT_MEAS_COV);
 
 	max_angle /= (180.0 / M_PI);
 

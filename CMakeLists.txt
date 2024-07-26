@@ -54,7 +54,9 @@ add_executable(px4ctrl_node
   src/PX4CtrlFSM.cpp
   src/PX4CtrlParam.cpp
   src/controller.cpp
+  src/factors.cpp
   src/input.cpp
+  src/jpcm.cpp
 )
 
 add_dependencies(px4ctrl_node quadrotor_msgs)
@@ -68,4 +70,22 @@ target_link_libraries(px4ctrl_node
 
 catkin_install_python(PROGRAMS thrust_calibrate_scrips/thrust_calibrate.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+
+add_executable(test_jpcm        
+  test/test_jpcm.cpp
+  src/controller.cpp
+  src/factors.cpp
+  src/PX4CtrlParam.cpp
+  src/input.cpp
+  src/jpcm.cpp
+)
+
+add_dependencies(test_jpcm quadrotor_msgs geometry_msgs)
+
+target_link_libraries(test_jpcm
+  ${catkin_LIBRARIES}
+  gtsam
+  gtsam_unstable
+  ${YAML_CPP_LIBRARIES}
 )

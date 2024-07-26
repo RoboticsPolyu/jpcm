@@ -12,7 +12,7 @@
 
 #include "input.h"
 #include <Eigen/Dense>
-
+#include "factors.h"
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Quaternion.h>
@@ -21,6 +21,7 @@
 
 struct Desired_State_t
 {
+  ros::Time rcv_stamp;
 	Eigen::Vector3d p;
 	Eigen::Vector3d v;
 	Eigen::Vector3d a;
@@ -33,7 +34,8 @@ struct Desired_State_t
 	Desired_State_t(){};
 
 	Desired_State_t(Odom_Data_t &odom)
-		: p(odom.p),
+		: rcv_stamp(ros::Time(0)),
+      p(odom.p),
 		  v(Eigen::Vector3d::Zero()),
 		  a(Eigen::Vector3d::Zero()),
 		  j(Eigen::Vector3d::Zero()),
@@ -54,24 +56,45 @@ struct Controller_Output_t
 	// Collective mass normalized thrust
 	double thrust;
 
+  // Body rates in body frame
+	Eigen::Vector3d mpc_bodyrates; // [rad/s]
+
+	// Collective mass normalized thrust
+	double mpc_thrust;
+
 	//Eigen::Vector3d des_v_real;
 };
 
 
-class SE3Control
+class DFBControl
 {
 public:
-  SE3Control(Parameter_t &);
-  ~SE3Control();
-  quadrotor_msgs::Px4ctrlDebug calculateControl(const Desired_State_t &des,
-      const Odom_Data_t &odom,
-      const Imu_Data_t &imu, 
-      Controller_Output_t &thr_bodyrate_u);
-  bool estimateThrustModel(const Eigen::Vector3d &est_v,
-      const Parameter_t &param);
+  enum CTRL_MODE
+  {
+    DFBC = 0x01,
+    MPC,
+    JPCM
+  };
+
+  DFBControl(Parameter_t &);
+  
+  ~DFBControl();
+
+  quadrotor_msgs::Px4ctrlDebug calculateControl(const Desired_State_t &des, const Odom_Data_t &odom, const Imu_Data_t &imu, Controller_Output_t &thr_bodyrate_u);
+
+  quadrotor_msgs::Px4ctrlDebug calculateControl(const Desired_State_t &des, const Odom_Data_t &odom, const Imu_Data_t &imu, 
+    Controller_Output_t &thr_bodyrate_u, CTRL_MODE mode_switch);
+
+  double computeDesiredCollectiveThrustSignal(const Eigen::Vector3d &des_acc, const Eigen::Vector3d &v);
+  
+  bool estimateThrustModel(const Eigen::Vector3d &est_v, const Parameter_t &param);
+  
   void resetThrustMapping(void);
 
   void set_hover_thrust(float hover_thrust) { thr2acc_ = param_.gra / hover_thrust; }
+
+  const Parameter_t & get_param() { return param_; };
+
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
 private:
@@ -85,11 +108,19 @@ private:
   double thr2acc_;
   double P_;
 
-  double computeDesiredCollectiveThrustSignal(const Eigen::Vector3d &des_acc, const Eigen::Vector3d &v);
   double fromQuaternion2yaw(Eigen::Quaterniond q);
   double limit_value(double upper_bound,  double input, double lower_bound);
   Eigen::Vector3d limit_err(const Eigen::Vector3d err, const double p_err_max);
 
+  void buildFactorGraph(gtsam::NonlinearFactorGraph& _graph, gtsam::Values& _initial_value, const std::vector<Desired_State_t> &des_v, const Odom_Data_t &odom, double dt);
+
+  std::vector<Desired_State_t> des_vec_;
+  gtsam::NonlinearFactorGraph  graph_;
+  gtsam::Values                initial_value_;
+  double                       dt_;
+  uint16_t                     opt_lens_traj_;
+
+protected:
   std::ofstream log_;
   
 };

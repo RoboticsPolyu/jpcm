@@ -254,6 +254,10 @@ void Command_Data_t::feed(quadrotor_msgs::PositionCommandConstPtr pMsg)
     w(1) = msg.kx[1];
     w(2) = msg.kx[2];
 
+    r(0) = msg.kv[0];
+    r(1) = msg.kv[1];
+    r(2) = msg.kv[2];
+
     yaw = uav_utils::normalize_angle(msg.yaw);
     yaw_rate = msg.yaw_dot;
 }
@@ -305,7 +309,6 @@ Takeoff_Land_Data_t::Takeoff_Land_Data_t()
 
 void Takeoff_Land_Data_t::feed(quadrotor_msgs::TakeoffLandConstPtr pMsg)
 {
-
     msg = *pMsg;
     rcv_stamp = ros::Time::now();
 

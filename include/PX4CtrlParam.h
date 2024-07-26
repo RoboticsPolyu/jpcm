@@ -60,13 +60,59 @@ public:
 		double speed;
 	};
 
+	// factor graph params
+	struct FactorGraph
+	{
+		std::string LOG_NAME;
+
+		double PRI_VICON_COV;
+		double PRI_VICON_VEL_COV; 
+
+		double CONTROL_P_COV_X;
+		double CONTROL_P_COV_Y;
+		double CONTROL_P_COV_Z;
+		double CONTROL_PF_COV_X;
+		double CONTROL_PF_COV_Y;
+		double CONTROL_PF_COV_Z;
+		double CONTROL_V_COV;
+		double DYNAMIC_P_COV; 
+		double DYNAMIC_R_COV;
+		double DYNAMIC_V_COV;
+		double CONTROL_R1_COV;
+		double CONTROL_R2_COV;
+		double CONTROL_R3_COV;
+
+		double INPUT_JERK_T; 
+		double INPUT_JERK_M; 
+		double INPUT_JERK_M3; 
+		
+		int OPT_LENS_TRAJ;
+		int WINDOW_SIZE;
+
+		double high; 
+		double low; 
+		double thr; 
+
+		double ghigh; 
+		double glow; 
+		double gthr; 
+
+		double alpha; 
+
+		double POS_MEAS_MEAN;
+    	double POS_MEAS_COV;
+    	double VEL_MEAS_COV;
+    	double ROT_MEAS_COV;
+	};
+
 	Gain gain;
 	RotorDrag rt_drag;
 	MsgTimeout msg_timeout;
 	RCReverse rc_reverse;
 	ThrustMapping thr_map;
 	AutoTakeoffLand takeoff_land;
-
+	FactorGraph factor_graph;
+	
 	int pose_solver;
 	double mass;
 	double gra;

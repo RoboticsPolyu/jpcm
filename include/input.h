@@ -131,6 +131,7 @@ public:
   Eigen::Vector3d a;
   Eigen::Vector3d j;
   Eigen::Vector3d w;
+  Eigen::Vector3d r;
   
   double yaw;
   double yaw_rate;

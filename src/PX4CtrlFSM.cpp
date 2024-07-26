@@ -4,7 +4,7 @@
 using namespace std;
 using namespace uav_utils;
 
-PX4CtrlFSM::PX4CtrlFSM(Parameter_t &param_, SE3Control &controller_) : param(param_), controller(controller_) /*, thrust_curve(thrust_curve_)*/
+PX4CtrlFSM::PX4CtrlFSM(Parameter_t &param_, DFBControl &controller_) : param(param_), controller(controller_) /*, thrust_curve(thrust_curve_)*/
 {
 	state = MANUAL_CTRL;
 	hover_pose.setZero();
@@ -37,7 +37,6 @@ PX4CtrlFSM::PX4CtrlFSM(Parameter_t &param_, SE3Control &controller_) : param(par
 
 void PX4CtrlFSM::process()
 {
-
 	ros::Time now_time = ros::Time::now();
 	Controller_Output_t thr_bodyrate_u;
 	Desired_State_t des(odom_data);
@@ -318,7 +317,9 @@ void PX4CtrlFSM::process()
 	}
 	else
 	{
-		debug_msg = controller.calculateControl(des, odom_data, imu_data, thr_bodyrate_u);
+		gtsam::Rot3 rot = gtsam::Rot3::identity();
+  		des.q = rot.toQuaternion();
+		debug_msg = controller.calculateControl(des, odom_data, imu_data, thr_bodyrate_u, DFBControl::CTRL_MODE::MPC);
 		debug_msg.header.stamp = now_time;
 		debug_pub.publish(debug_msg);
 	}
@@ -408,7 +409,9 @@ Desired_State_t PX4CtrlFSM::get_hover_des()
 	des.w = Eigen::Vector3d::Zero();
 	des.yaw = hover_pose(3);
 	des.yaw_rate = 0.0;
-
+	gtsam::Rot3 rot = gtsam::Rot3::Yaw(des.yaw);
+	des.q = rot.toQuaternion();
+	des.rcv_stamp = ros::Time::now();
 	return des;
 }
 
@@ -420,9 +423,10 @@ Desired_State_t PX4CtrlFSM::get_cmd_des()
 	des.a = cmd_data.a;
 	des.j = cmd_data.j;
 	des.w = cmd_data.w;
+	des.q = gtsam::Rot3::Expmap(cmd_data.r).toQuaternion();
 	des.yaw = cmd_data.yaw;
 	des.yaw_rate = cmd_data.yaw_rate;
-
+	des.rcv_stamp = cmd_data.rcv_stamp;
 	return des;
 }
 

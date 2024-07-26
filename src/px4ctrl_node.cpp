@@ -26,8 +26,9 @@ int main(int argc, char *argv[])
     Parameter_t param;
     param.config_from_ros_handle(nh);
 
-    // Controller controller(param);
-    SE3Control controller(param);
+    DFBControl controller(param);
+    // JCPM_TGyro controller(param);
+
     PX4CtrlFSM fsm(param, controller);
 
     ros::Subscriber state_sub =
@@ -93,14 +94,14 @@ int main(int argc, char *argv[])
                                                   ros::VoidConstPtr(),
                                                   ros::TransportHints().tcpNoDelay());
 
-    fsm.ctrl_FCU_pub = nh.advertise<mavros_msgs::AttitudeTarget>("/mavros/setpoint_raw/attitude", 10);
+    fsm.ctrl_FCU_pub           = nh.advertise<mavros_msgs::AttitudeTarget>("/mavros/setpoint_raw/attitude", 10);
     fsm.traj_start_trigger_pub = nh.advertise<geometry_msgs::PoseStamped>("/traj_start_trigger", 10);
 
-    fsm.debug_pub = nh.advertise<quadrotor_msgs::Px4ctrlDebug>("/debugPx4ctrl", 10); // debug
+    fsm.debug_pub         = nh.advertise<quadrotor_msgs::Px4ctrlDebug>("/debugPx4ctrl", 10); // debug
 
-    fsm.set_FCU_mode_srv = nh.serviceClient<mavros_msgs::SetMode>("/mavros/set_mode");
+    fsm.set_FCU_mode_srv  = nh.serviceClient<mavros_msgs::SetMode>("/mavros/set_mode");
     fsm.arming_client_srv = nh.serviceClient<mavros_msgs::CommandBool>("/mavros/cmd/arming");
-    fsm.reboot_FCU_srv = nh.serviceClient<mavros_msgs::CommandLong>("/mavros/cmd/command");
+    fsm.reboot_FCU_srv    = nh.serviceClient<mavros_msgs::CommandLong>("/mavros/cmd/command");
 
     ros::Duration(0.5).sleep();
 
