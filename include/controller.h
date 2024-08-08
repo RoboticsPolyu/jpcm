@@ -85,7 +85,12 @@ public:
   quadrotor_msgs::Px4ctrlDebug calculateControl(const Desired_State_t &des, const Odom_Data_t &odom, const Imu_Data_t &imu, 
     Controller_Output_t &thr_bodyrate_u, CTRL_MODE mode_switch);
 
+  quadrotor_msgs::Px4ctrlDebug calculateControl(const Desired_State_t &des, const Odom_Data_t &odom, const Imu_Data_t &imu, const Imu_Data_t &imu_raw, 
+    Controller_Output_t &thr_bodyrate_u, CTRL_MODE mode_switch);
+  
   double computeDesiredCollectiveThrustSignal(const Eigen::Vector3d &des_acc, const Eigen::Vector3d &v);
+
+  double computeDesiredCollectiveThrustSignal(const Eigen::Vector3d &des_acc);
   
   bool estimateThrustModel(const Eigen::Vector3d &est_v, const Parameter_t &param);
   
@@ -108,17 +113,44 @@ private:
   double thr2acc_;
   double P_;
 
+  uint64_t state_idx_ = 0;
+  int64_t factor_idx_ = -1;
+  std::vector<Odom_Data_t> odom_data_v_;
+  std::vector<Odom_Data_t> odom_data_noise_;
+  std::vector<Imu_Data_t>  imu_data_v_;
+
   double fromQuaternion2yaw(Eigen::Quaterniond q);
   double limit_value(double upper_bound,  double input, double lower_bound);
   Eigen::Vector3d limit_err(const Eigen::Vector3d err, const double p_err_max);
 
-  void buildFactorGraph(gtsam::NonlinearFactorGraph& _graph, gtsam::Values& _initial_value, const std::vector<Desired_State_t> &des_v, const Odom_Data_t &odom, double dt);
+  void buildFactorGraph(gtsam::NonlinearFactorGraph& _graph, gtsam::Values& _initial_value, 
+                        const std::vector<Desired_State_t> &des_v, const Odom_Data_t &odom, double dt);
+
+  void buildFactorGraph(gtsam::NonlinearFactorGraph& _graph, gtsam::Values& _initial_value, 
+                        const std::vector<Desired_State_t> &des_v, const std::vector<Odom_Data_t> &odom_v, const std::vector<Imu_Data_t> &imu_v, double dt);
 
   std::vector<Desired_State_t> des_vec_;
   gtsam::NonlinearFactorGraph  graph_;
   gtsam::Values                initial_value_;
   double                       dt_;
-  uint16_t                     opt_lens_traj_;
+  uint16_t                     opt_traj_lens_;
+  uint16_t                     window_lens_;
+
+  std::default_random_engine meas_x_gen;
+  std::default_random_engine meas_y_gen;
+  std::default_random_engine meas_z_gen;
+  
+  std::default_random_engine meas_rx_gen;
+  std::default_random_engine meas_ry_gen;
+  std::default_random_engine meas_rz_gen;
+
+  std::default_random_engine meas_vx_gen;
+  std::default_random_engine meas_vy_gen;
+  std::default_random_engine meas_vz_gen;
+
+  std::normal_distribution<double> position_noise;
+  std::normal_distribution<double> rotation_noise;
+  std::normal_distribution<double> velocity_noise;
 
 protected:
   std::ofstream log_;

@@ -36,8 +36,25 @@ include_directories(
 
 include_directories("/home/amov/Fast250/devel/include")
 
+add_executable(gps_imu        
+  src/gps_imu.cpp
+  src/gps_imu_node.cpp
+  src/PX4CtrlParam.cpp
+  src/input.cpp
+)
+
+add_dependencies(gps_imu quadrotor_msgs geometry_msgs)
+
+target_link_libraries(gps_imu
+  ${catkin_LIBRARIES}
+  gtsam
+  gtsam_unstable
+  ${YAML_CPP_LIBRARIES}
+)
+
 add_executable(odom_node        
   src/odom_node.cpp
+  src/PX4CtrlParam.cpp
 )
 
 add_dependencies(odom_node quadrotor_msgs geometry_msgs)
@@ -57,6 +74,8 @@ add_executable(px4ctrl_node
   src/factors.cpp
   src/input.cpp
   src/jpcm.cpp
+  src/Marginalization.cpp
+  src/GTSAMUtils.cpp
 )
 
 add_dependencies(px4ctrl_node quadrotor_msgs)
@@ -79,6 +98,8 @@ add_executable(test_jpcm
   src/PX4CtrlParam.cpp
   src/input.cpp
   src/jpcm.cpp
+  src/Marginalization.cpp
+  src/GTSAMUtils.cpp
 )
 
 add_dependencies(test_jpcm quadrotor_msgs geometry_msgs)

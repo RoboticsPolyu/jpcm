@@ -1,0 +1,4 @@
+acc_sigma: 0.01
+gyro_sigma: 0.001
+acc_bias_imu: 0.001
+gyro_bias_sigma: 0.0001

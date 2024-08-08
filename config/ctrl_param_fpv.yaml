@@ -2,7 +2,7 @@
 # ⭐⭐⭐  Set parameters carefully for satisfied performance!   ⭐⭐⭐ #
 #########################################################################
 
-mass        : 1.0 # kg 
+mass        : 0.979 # kg 
 gra         : 9.81 
 pose_solver : 1     # 0:From ZhepeiWang (drag & less singular) 1:From ZhepeiWang, 2:From rotor-drag    
 ctrl_freq_max    : 100.0
@@ -10,6 +10,7 @@ use_bodyrate_ctrl: true
 max_manual_vel   : 1.0
 max_angle: 30  # Attitude angle limit in degree. A negative value means no limit.
 low_voltage: 13.2 # 4S battery
+odom_freq: 100
 
 rc_reverse: # *
     roll: false
@@ -22,7 +23,7 @@ auto_takeoff_land:
     enable_auto_arm: true
     no_RC: false
     takeoff_height: 1.5 # m
-    takeoff_land_speed: 0.03 # m/s
+    takeoff_land_speed: 0.20 # m/s
 
 thrust_model: # The model that maps thrust signal thr_bodyrate_u(0~1) to real thrust force F(Unit:N): F=K1*Voltage^K2*(K3*thr_bodyrate_u^2+(1-K3)*thr_bodyrate_u). 
     print_value: false # display the value of “thr_scale_compensate” or “hover_percentage” during thrust model estimating.
@@ -69,10 +70,11 @@ rotor_drag:
     # x: 0.24  # The reduced acceleration on each axis caused by rotor drag. Unit:(m*s^-2)/(m*s^-1).
     # y: 0.22  # Same as above
     # z: 0.31  # Same as above
+    # k_thrust_horz: 0.005 #0.007 # Set to 0 recommended... --
     x: 0.  # The reduced acceleration on each axis caused by rotor drag. Unit:(m*s^-2)/(m*s^-1).
     y: 0.  # Same as above
     z: 0.  # Same as above
-    k_thrust_horz: 0.005 #0.007 # Set to 0 recommended... --
+    k_thrust_horz: 0.00 #0.007 # Set to 0 recommended... --
 
 msg_timeout:
     odom: 0.5
@@ -94,22 +96,28 @@ z: -0.0106913068398
 Factor_graph:
     LOG_NAME:              TGYRO
 
-    PRI_VICON_COV:     0.001
-    PRI_VICON_VEL_COV: 0.001
+    PRI_VICON_COV:     0.02
+    PRI_VICON_VEL_COV: 0.02
 
-    CONTROL_P_COV_X:   0.05
-    CONTROL_PF_COV_X:  0.03
-    CONTROL_P_COV_Y:   0.05
-    CONTROL_PF_COV_Y:  0.03
+    # PRI_VICON_COV:     0.001
+    # PRI_VICON_VEL_COV: 0.001
+
+    CONTROL_P_COV_X:   0.07
+    CONTROL_PF_COV_X:  0.02
+    CONTROL_P_COV_Y:   0.07
+    CONTROL_PF_COV_Y:  0.02
     CONTROL_P_COV_Z:   0.20
-    CONTROL_PF_COV_Z:  0.03
+    CONTROL_PF_COV_Z:  0.01
+
     CONTROL_R3_COV:    0.03
-    CONTROL_R2_COV:    0.3
-    CONTROL_R1_COV:    0.3
-    CONTROL_V_COV:     0.3
+    CONTROL_R2_COV:    0.5
+    CONTROL_R1_COV:    0.5
+
+    CONTROL_V_COV:     1.3
     DYNAMIC_P_COV:     0.0001
     DYNAMIC_R_COV:     0.0001
     DYNAMIC_V_COV:     0.0001
+    
     INPUT_JERK_T:      0.2
     INPUT_JERK_M:      0.1
     INPUT_JERK_M3:     0.01
@@ -122,15 +130,23 @@ Factor_graph:
     G_CLF_THR:         0.1
     CLF_ALPHA:         1
 
-    POS_MEAS_MEAN:  0.001
-    POS_MEAS_COV:   0.001
-    VEL_MEAS_COV:   0.001
-    ROT_MEAS_COV:   0.001
+    # POS_MEAS_MEAN:  0.001
+    # POS_MEAS_COV:   0.001
+    # VEL_MEAS_COV:   0.001
+    # ROT_MEAS_COV:   0.001
 
     OPT_LENS_TRAJ: 20
     WINDOW_SIZE:   10
 
-    # POS_MEAS_MEAN:  0.00
-    # POS_MEAS_COV:   0.20 
-    # VEL_MEAS_COV:   0.05
-    # ROT_MEAS_COV:   0.01
+    POS_MEAS_MEAN:  0.00
+    POS_MEAS_COV:   0.05 # 0.05
+    VEL_MEAS_COV:   0.02
+    ROT_MEAS_COV:   0.01
+
+    # IMU Params
+    # acc_sigma:       0.01
+    # gyro_sigma:      0.001
+    # acc_bias_imu:    0.001
+    # gyro_bias_sigma: 0.0001
+
+

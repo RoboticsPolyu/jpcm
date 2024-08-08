@@ -164,6 +164,45 @@ void Odom_Data_t::feed(nav_msgs::OdometryConstPtr pMsg)
     one_min_count ++;
 }
 
+Imu_Datas_t::Imu_Datas_t()
+{
+}
+
+void Imu_Datas_t::feed(sensor_msgs::ImuConstPtr pMsg)
+{
+    ros::Time now = ros::Time::now();
+
+    msg = *pMsg;
+    ros::Time rcv_stamp = now;
+    rcv_stampv.push_back(rcv_stamp);
+
+    Eigen::Vector3d w, a;
+    w(0) = msg.angular_velocity.x;
+    w(1) = msg.angular_velocity.y;
+    w(2) = msg.angular_velocity.z;
+
+    a(0) = msg.linear_acceleration.x; 
+    a(1) = msg.linear_acceleration.y;
+    a(2) = msg.linear_acceleration.z;
+
+    wv.push_back(w);
+    av.push_back(a);
+
+    // check the frequency
+    static int one_min_count = 9999;
+    static ros::Time last_clear_count_time = ros::Time(0.0);
+    if ( (now - last_clear_count_time).toSec() > 1.0 )
+    {
+        if ( one_min_count < 100 )
+        {
+            ROS_WARN("IMU frequency seems lower than 100Hz, which is too low!");
+        }
+        one_min_count = 0;
+        last_clear_count_time = now;
+    }
+    one_min_count ++;
+}
+
 Imu_Data_t::Imu_Data_t()
 {
     rcv_stamp = ros::Time(0);

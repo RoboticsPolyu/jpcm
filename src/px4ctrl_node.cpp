@@ -62,6 +62,13 @@ int main(int argc, char *argv[])
                                        ros::VoidConstPtr(),
                                        ros::TransportHints().tcpNoDelay());
 
+    ros::Subscriber imu_raw_sub =
+        nh.subscribe<sensor_msgs::Imu>("/mavros/imu/data_raw",
+                                       100,
+                                       boost::bind(&Imu_Datas_t::feed, &fsm.imu_raw_data, _1),
+                                       ros::VoidConstPtr(),
+                                       ros::TransportHints().tcpNoDelay());
+
     ros::Subscriber acc_sub =
         nh.subscribe<geometry_msgs::AccelStamped>("acc", // Note: do NOT change it to /mavros/imu/data_raw !!!
                                        100,
@@ -94,14 +101,12 @@ int main(int argc, char *argv[])
                                                   ros::VoidConstPtr(),
                                                   ros::TransportHints().tcpNoDelay());
 
-    fsm.ctrl_FCU_pub           = nh.advertise<mavros_msgs::AttitudeTarget>("/mavros/setpoint_raw/attitude", 10);
-    fsm.traj_start_trigger_pub = nh.advertise<geometry_msgs::PoseStamped>("/traj_start_trigger", 10);
-
-    fsm.debug_pub         = nh.advertise<quadrotor_msgs::Px4ctrlDebug>("/debugPx4ctrl", 10); // debug
-
-    fsm.set_FCU_mode_srv  = nh.serviceClient<mavros_msgs::SetMode>("/mavros/set_mode");
-    fsm.arming_client_srv = nh.serviceClient<mavros_msgs::CommandBool>("/mavros/cmd/arming");
-    fsm.reboot_FCU_srv    = nh.serviceClient<mavros_msgs::CommandLong>("/mavros/cmd/command");
+    fsm.ctrl_FCU_pub        = nh.advertise<mavros_msgs::AttitudeTarget> ("/mavros/setpoint_raw/attitude", 10);
+    fsm.traj_start_trig_pub = nh.advertise<geometry_msgs::PoseStamped>  ("/traj_start_trigger", 10);
+    fsm.debug_pub           = nh.advertise<quadrotor_msgs::Px4ctrlDebug>("/debugPx4ctrl", 10); // debug
+    fsm.set_FCU_mode_srv    = nh.serviceClient<mavros_msgs::SetMode>    ("/mavros/set_mode");
+    fsm.arming_client_srv   = nh.serviceClient<mavros_msgs::CommandBool>("/mavros/cmd/arming");
+    fsm.reboot_FCU_srv      = nh.serviceClient<mavros_msgs::CommandLong>("/mavros/cmd/command");
 
     ros::Duration(0.5).sleep();
 

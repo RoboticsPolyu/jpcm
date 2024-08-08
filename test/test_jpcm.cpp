@@ -16,7 +16,7 @@ int main(int argc, char *argv[])
   float v  = 0.5;
   float dt = 0.01;
 
-  for(int test_idx = 0; test_idx < 100; test_idx++)
+  for(int test_idx = 0; test_idx < 1; test_idx++)
   {
     // int test_idx = 60;
     odom.p = Eigen::Vector3d(0.005*(test_idx - 50), 0.005*(test_idx - 50), 0.00);

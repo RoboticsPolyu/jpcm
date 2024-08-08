@@ -8,11 +8,11 @@ class JCPM_TGyro: public DFBControl
 {
 public:
 
-  JCPM_TGyro(Parameter_t &param): DFBControl(param), opt_lens_traj_(20)
+  JCPM_TGyro(Parameter_t &param): DFBControl(param), opt_traj_lens_(20)
   { 
     graph_.empty(); dt_ = 0.01f; 
     const Parameter_t params = get_param();
-    opt_lens_traj_ = params.factor_graph.OPT_LENS_TRAJ;
+    opt_traj_lens_ = params.factor_graph.OPT_LENS_TRAJ;
   }
 
   /* mode_switch: DFBC  */
@@ -26,7 +26,7 @@ private:
   gtsam::NonlinearFactorGraph  graph_;
   gtsam::Values                initial_value_;
   double                       dt_;
-  uint16_t                     opt_lens_traj_;
+  uint16_t                     opt_traj_lens_;
 
 };
 

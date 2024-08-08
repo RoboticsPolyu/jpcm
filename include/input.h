@@ -15,7 +15,6 @@
 #include <uav_utils/utils.h>
 #include "PX4CtrlParam.h"
 
-
 class RC_Data_t
 {
 public:
@@ -53,23 +52,23 @@ public:
 
 class Acc_Data_t
 {
-  public:
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-    Eigen::Vector3d acc;
-    ros::Time rcv_stamp;
-    
-    geometry_msgs::AccelStamped msg;
+public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  Eigen::Vector3d acc;
+  ros::Time rcv_stamp;
 
-    Acc_Data_t(){ rcv_stamp = ros::Time(0); }
-    
-    void feed(geometry_msgs::AccelStampedConstPtr pMsg)
-    {
-      msg = *pMsg;
-      acc[0] = msg.accel.linear.x;
-      acc[1] = msg.accel.linear.y;
-      acc[2] = msg.accel.linear.z;
-      // std::cout << "acc: [ " << acc.x() << ", " << acc.y() << ", " << acc.z() << " ]" << std::endl;
-    }
+  geometry_msgs::AccelStamped msg;
+
+  Acc_Data_t() { rcv_stamp = ros::Time(0); }
+
+  void feed(geometry_msgs::AccelStampedConstPtr pMsg)
+  {
+    msg = *pMsg;
+    acc[0] = msg.accel.linear.x;
+    acc[1] = msg.accel.linear.y;
+    acc[2] = msg.accel.linear.z;
+    // std::cout << "acc: [ " << acc.x() << ", " << acc.y() << ", " << acc.z() << " ]" << std::endl;
+  }
 };
 
 class Odom_Data_t
@@ -103,6 +102,19 @@ public:
   void feed(sensor_msgs::ImuConstPtr pMsg);
 };
 
+class Imu_Datas_t
+{
+public:
+  std::vector<Eigen::Vector3d> wv;
+  std::vector<Eigen::Vector3d> av;
+
+  sensor_msgs::Imu msg;
+  std::vector<ros::Time> rcv_stampv;
+
+  Imu_Datas_t();
+  void feed(sensor_msgs::ImuConstPtr pMsg);
+};
+
 class State_Data_t
 {
 public:
@@ -132,7 +144,7 @@ public:
   Eigen::Vector3d j;
   Eigen::Vector3d w;
   Eigen::Vector3d r;
-  
+
   double yaw;
   double yaw_rate;
 

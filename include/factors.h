@@ -41,6 +41,38 @@ namespace UAVFactor
 
     };
 
+    class GTSAM_EXPORT IMUFactor : public NoiseModelFactor5<gtsam::Pose3, gtsam::Vector3, gtsam::imuBias::ConstantBias, gtsam::Pose3, gtsam::Vector3>
+    {
+    public:
+        typedef boost::shared_ptr<IMUFactor> shared_ptr;
+
+        IMUFactor() {}
+        IMUFactor(Key p_i, Key vel_i, Key bias_i, Key p_j, Key vel_j, 
+            float dt, gtsam::Vector3 acc, gtsam::Vector3 gyro, const SharedNoiseModel &model);
+
+        virtual ~IMUFactor()
+        {
+        }
+
+        Vector evaluateError(const gtsam::Pose3 &pos_i, const gtsam::Vector3 &vel_i, const gtsam::imuBias::ConstantBias &bias_i,
+                             const gtsam::Pose3 &pos_j, const gtsam::Vector3 &vel_j, 
+                             boost::optional<Matrix &> H1 = boost::none, boost::optional<Matrix &> H2 = boost::none,
+                             boost::optional<Matrix &> H3 = boost::none, boost::optional<Matrix &> H4 = boost::none,
+                             boost::optional<Matrix &> H5 = boost::none) const;
+
+    private:
+        typedef IMUFactor This;
+        typedef NoiseModelFactor5<gtsam::Pose3, gtsam::Vector3, gtsam::imuBias::ConstantBias, gtsam::Pose3, gtsam::Vector3>
+            Base;
+        
+        float           dt_     = 0.01f;
+        double         mass_   = 1.0f;
+        gtsam::Vector3 acc_;
+        gtsam::Vector3 gyro_;
+        gtsam::Vector3 gI_     = gtsam::Vector3(0, 0, 9.81); // gravity
+
+    };
+
 
     class GTSAM_EXPORT ControlLimitTGyroFactor : public NoiseModelFactor1<gtsam::Vector4>
     {

@@ -39,8 +39,9 @@ public:
 	ExtendedState_Data_t extended_state_data;
 	Odom_Data_t          odom_data;
 	Imu_Data_t           imu_data;
+	Imu_Datas_t          imu_raw_data;
 	Acc_Data_t           acc_data; // linear acc
-	float                hover_thrust;
+	float                 hover_thrust;
 	
 	Command_Data_t cmd_data;
 	Battery_Data_t bat_data;
@@ -49,7 +50,7 @@ public:
 	DFBControl &controller;
 	// JCPM_TGyro &controller;
 
-	ros::Publisher traj_start_trigger_pub;
+	ros::Publisher traj_start_trig_pub;
 	ros::Publisher ctrl_FCU_pub;
 	ros::Publisher debug_pub; //debug
 	ros::ServiceClient set_FCU_mode_srv;

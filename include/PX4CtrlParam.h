@@ -120,7 +120,8 @@ public:
 	double ctrl_freq_max;
 	double max_manual_vel;
 	double low_voltage;
-
+	int    odom_freq;
+	
 	double qw, qx, qy, qz, x, y, z;
 	
 	bool use_bodyrate_ctrl;
