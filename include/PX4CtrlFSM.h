@@ -15,7 +15,7 @@
 #include "input.h"
 // #include "ThrustCurve.h"
 #include "controller.h"
-#include "jpcm.h"
+#include "JPCM.h"
 
 
 struct AutoTakeoffLand_t

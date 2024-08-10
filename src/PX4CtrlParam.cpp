@@ -72,7 +72,7 @@ void Parameter_t::config_from_ros_handle(const ros::NodeHandle &nh)
 
 	read_essential_param(nh, "Factor_graph/LOG_NAME", factor_graph.LOG_NAME);
 
-	read_essential_param(nh, "Factor_graph/PRI_VICON_COV", factor_graph.PRI_VICON_COV);
+	read_essential_param(nh, "Factor_graph/PRI_VICON_POS_COV", factor_graph.PRI_VICON_POS_COV);
 	read_essential_param(nh, "Factor_graph/PRI_VICON_VEL_COV", factor_graph.PRI_VICON_VEL_COV);
 
 	read_essential_param(nh, "Factor_graph/CONTROL_P_COV_X", factor_graph.CONTROL_P_COV_X);
@@ -110,6 +110,15 @@ void Parameter_t::config_from_ros_handle(const ros::NodeHandle &nh)
 	read_essential_param(nh, "Factor_graph/POS_MEAS_COV", factor_graph.POS_MEAS_COV);
 	read_essential_param(nh, "Factor_graph/VEL_MEAS_COV", factor_graph.VEL_MEAS_COV);
 	read_essential_param(nh, "Factor_graph/ROT_MEAS_COV", factor_graph.ROT_MEAS_COV);
+
+	read_essential_param(nh, "Factor_graph/PRIOR_POS_MEAS_COV", factor_graph.PRIOR_POS_MEAS_COV);
+	read_essential_param(nh, "Factor_graph/PRIOR_VEL_MEAS_COV", factor_graph.PRIOR_VEL_MEAS_COV);
+	read_essential_param(nh, "Factor_graph/PRIOR_ROT_MEAS_COV", factor_graph.PRIOR_ROT_MEAS_COV);
+
+	read_essential_param(nh, "Factor_graph/acc_sigma", factor_graph.acc_sigma);
+	read_essential_param(nh, "Factor_graph/gyro_sigma", factor_graph.gyro_sigma);
+	read_essential_param(nh, "Factor_graph/acc_bias_imu", factor_graph.acc_bias_imu);
+	read_essential_param(nh, "Factor_graph/gyro_bias_sigma", factor_graph.gyro_bias_sigma);
 
 	max_angle /= (180.0 / M_PI);
 

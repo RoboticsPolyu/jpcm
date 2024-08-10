@@ -12,6 +12,9 @@ int main(int argc, char *argv[])
   Desired_State_t des;
   Odom_Data_t     odom;
   Imu_Data_t      imu;
+  Imu_Data_t      imu_raw;
+  imu_raw.a = Eigen::Vector3d(0, 0, -9.81);
+  imu_raw.w = Eigen::Vector3d(0, 0, 0);
 
   float v  = 0.5;
   float dt = 0.01;
@@ -19,28 +22,30 @@ int main(int argc, char *argv[])
   for(int test_idx = 0; test_idx < 1; test_idx++)
   {
     // int test_idx = 60;
-    odom.p = Eigen::Vector3d(0.005*(test_idx - 50), 0.005*(test_idx - 50), 0.00);
+    // odom.p = Eigen::Vector3d(0.005*(test_idx - 50), 0.005*(test_idx - 50), 0.00);
+    odom.p = Eigen::Vector3d(0.0, 0.0, 0.0);
     odom.v = Eigen::Vector3d(0,0,0);
 
-    gtsam::Vector3 rzyx(0, 0, 10.0/180.0*3.14159);
-    gtsam::Rot3 rot = gtsam::Rot3::RzRyRx(rzyx);
-    // gtsam::Rot3 rot = gtsam::Rot3::identity();
+    // gtsam::Vector3 rzyx(0, 0, 10.0/180.0*3.14159);
+    // gtsam::Rot3 rot = gtsam::Rot3::RzRyRx(rzyx);
+    gtsam::Rot3 rot = gtsam::Rot3::identity();
     odom.q          = rot.toQuaternion();
 
     des.p = Eigen::Vector3d(0,0,0);
     des.v = Eigen::Vector3d(0,0,v);
-    rot = gtsam::Rot3::identity();
+    rot   = gtsam::Rot3::identity();
     des.q = rot.toQuaternion();
 
     DFBControl controller(param);
     Controller_Output_t ctrl_cmd;
     DFBControl::CTRL_MODE MPC = DFBControl::MPC;
 
-    for(int i = 0; i < param.factor_graph.OPT_LENS_TRAJ; i++)
+    for(int i = 0; i < param.factor_graph.OPT_LENS_TRAJ+2; i++)
     {
       des.p = Eigen::Vector3d(0,0,v*(i+1)*dt);
       des.v = Eigen::Vector3d(0,0,v);
-      controller.calculateControl(des, odom, imu, ctrl_cmd, MPC);
+      std::cout << "calculateControl" << i << std::endl;
+      controller.calculateControl(des, odom, imu, imu_raw, ctrl_cmd, MPC);
     }
 
     std::cout << "MPC ctrl thrust: " << ctrl_cmd.mpc_thrust << std::endl;

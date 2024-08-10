@@ -114,7 +114,7 @@ private:
   double P_;
 
   uint64_t state_idx_ = 0;
-  int64_t factor_idx_ = -1;
+  
   std::vector<Odom_Data_t> odom_data_v_;
   std::vector<Odom_Data_t> odom_data_noise_;
   std::vector<Imu_Data_t>  imu_data_v_;
@@ -129,9 +129,13 @@ private:
   void buildFactorGraph(gtsam::NonlinearFactorGraph& _graph, gtsam::Values& _initial_value, 
                         const std::vector<Desired_State_t> &des_v, const std::vector<Odom_Data_t> &odom_v, const std::vector<Imu_Data_t> &imu_v, double dt);
 
-  std::vector<Desired_State_t> des_vec_;
+  std::vector<Desired_State_t> des_data_v_;
+  gtsam::NonlinearFactorGraph  graph_positioning_;
+  gtsam::Values                initial_value_positioning_;
+
   gtsam::NonlinearFactorGraph  graph_;
   gtsam::Values                initial_value_;
+
   double                       dt_;
   uint16_t                     opt_traj_lens_;
   uint16_t                     window_lens_;

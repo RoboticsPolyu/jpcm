@@ -96,24 +96,31 @@ z: -0.0106913068398
 Factor_graph:
     LOG_NAME:              TGYRO
 
-    PRI_VICON_COV:     0.02
-    PRI_VICON_VEL_COV: 0.02
+    PRI_VICON_POS_COV:     0.14
+    PRI_VICON_VEL_COV: 0.07
 
-    # PRI_VICON_COV:     0.001
+    # PRI_VICON_POS_COV:     0.001
     # PRI_VICON_VEL_COV: 0.001
 
-    CONTROL_P_COV_X:   0.07
-    CONTROL_PF_COV_X:  0.02
-    CONTROL_P_COV_Y:   0.07
-    CONTROL_PF_COV_Y:  0.02
-    CONTROL_P_COV_Z:   0.20
+    CONTROL_P_COV_X:   0.12
+    CONTROL_PF_COV_X:  0.01
+    CONTROL_P_COV_Y:   0.12
+    CONTROL_PF_COV_Y:  0.01
+    CONTROL_P_COV_Z:   0.12
     CONTROL_PF_COV_Z:  0.01
 
-    CONTROL_R3_COV:    0.03
-    CONTROL_R2_COV:    0.5
-    CONTROL_R1_COV:    0.5
+    # CONTROL_P_COV_X:   0.07
+    # CONTROL_PF_COV_X:  0.02
+    # CONTROL_P_COV_Y:   0.07
+    # CONTROL_PF_COV_Y:  0.02
+    # CONTROL_P_COV_Z:   0.20
+    # CONTROL_PF_COV_Z:  0.01
 
-    CONTROL_V_COV:     1.3
+    CONTROL_R3_COV:    0.03
+    CONTROL_R2_COV:    1.4
+    CONTROL_R1_COV:    1.4
+
+    CONTROL_V_COV:     12
     DYNAMIC_P_COV:     0.0001
     DYNAMIC_R_COV:     0.0001
     DYNAMIC_V_COV:     0.0001
@@ -135,18 +142,23 @@ Factor_graph:
     # VEL_MEAS_COV:   0.001
     # ROT_MEAS_COV:   0.001
 
-    OPT_LENS_TRAJ: 20
-    WINDOW_SIZE:   10
+    OPT_LENS_TRAJ: 3
+    WINDOW_SIZE:   3
 
     POS_MEAS_MEAN:  0.00
-    POS_MEAS_COV:   0.05 # 0.05
-    VEL_MEAS_COV:   0.02
+    POS_MEAS_COV:   0.14 # 0.05
+    VEL_MEAS_COV:   0.07
     ROT_MEAS_COV:   0.01
+    
+    PRIOR_POS_MEAS_COV:   0.14 # 0.05
+    PRIOR_VEL_MEAS_COV:   0.07
+    PRIOR_ROT_MEAS_COV:   0.01
 
     # IMU Params
-    # acc_sigma:       0.01
-    # gyro_sigma:      0.001
-    # acc_bias_imu:    0.001
-    # gyro_bias_sigma: 0.0001
-
+    acc_sigma:        0.01
+    gyro_sigma:       0.001
+    acc_bias_imu:     0.001
+    gyro_bias_sigma:  0.0001
+    prior_acc_sigma:  0.1
+    prior_gyro_sigma: 0.01
 

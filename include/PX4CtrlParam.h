@@ -65,7 +65,7 @@ public:
 	{
 		std::string LOG_NAME;
 
-		double PRI_VICON_COV;
+		double PRI_VICON_POS_COV;
 		double PRI_VICON_VEL_COV; 
 
 		double CONTROL_P_COV_X;
@@ -100,9 +100,18 @@ public:
 		double alpha; 
 
 		double POS_MEAS_MEAN;
-    	double POS_MEAS_COV;
-    	double VEL_MEAS_COV;
-    	double ROT_MEAS_COV;
+    double POS_MEAS_COV;
+    double VEL_MEAS_COV;
+    double ROT_MEAS_COV;
+
+    double PRIOR_POS_MEAS_COV;
+    double PRIOR_VEL_MEAS_COV;
+    double PRIOR_ROT_MEAS_COV;
+
+		double acc_sigma;
+    double gyro_sigma;
+    double acc_bias_imu;
+    double gyro_bias_sigma;
 	};
 
 	Gain gain;

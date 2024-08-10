@@ -73,7 +73,7 @@ add_executable(px4ctrl_node
   src/controller.cpp
   src/factors.cpp
   src/input.cpp
-  src/jpcm.cpp
+  src/JPCM.cpp
   src/Marginalization.cpp
   src/GTSAMUtils.cpp
 )
@@ -97,7 +97,7 @@ add_executable(test_jpcm
   src/factors.cpp
   src/PX4CtrlParam.cpp
   src/input.cpp
-  src/jpcm.cpp
+  src/JPCM.cpp
   src/Marginalization.cpp
   src/GTSAMUtils.cpp
 )
