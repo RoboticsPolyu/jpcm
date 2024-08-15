@@ -5,6 +5,14 @@
 			
 		<!-- <remap from="~odom" to="/vins_fusion/imu_propagate" /> -->
 
+		<param name="vicon_pose_topic"  type="string" value="/vrpn_client_node/Quad13_ipn/pose"/>
+		<!--  <param name="vicon_pose_topic"  type="string" value="/mavros/vision_pose/pose"/> -->
+		<param name="vicon_twist_topic" type="string" value="/vrpn_client_node/Quad13_ipn/twist"/>
+		<param name="vicon_acc_topic"   type="string" value="/vrpn_client_node/Quad13_ipn/accel"/>
+		<param name="mav_pose_topic"    type="string" value="/mavros/vision_pose/pose"/>
+
+		<param name="extri_params_file" type="string" value="/home/amov/Fast250/src/px4ctrl/config/extrinsic.yaml"/>
+		
         <remap from="~odom" to="/vicon/odom" />
 		<remap from="~cmd" to="/position_cmd" />
         <rosparam command="load" file="$(find px4ctrl)/config/ctrl_param_fpv.yaml" />

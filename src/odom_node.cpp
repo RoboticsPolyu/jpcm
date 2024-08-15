@@ -11,6 +11,7 @@
 
 gtsam::Pose3                imu_T_vicon;
 geometry_msgs::PoseStamped  rev_pose_msg;
+geometry_msgs::PoseStamped  send_mav_pos_msg;
 geometry_msgs::TwistStamped rev_twist_msg;
 nav_msgs::Odometry          send_odom_msg;
 ros::Time                   send_last_time;
@@ -39,13 +40,15 @@ geometry_msgs::Pose fromGtsamPose(const gtsam::Pose3& pose)
 void pose_callback(const geometry_msgs::PoseStamped::ConstPtr& msg)
 {
     send_odom_msg.header.stamp = msg->header.stamp; // ros::Time::now();
-    rev_pose_msg = *msg;
+    send_mav_pos_msg.header.stamp = msg->header.stamp;
+    rev_pose_msg               = *msg;
 }
 
-void twist_callback(const geometry_msgs::TwistStamped::ConstPtr& msg, const gtsam::Pose3& iTv, int odom_freq, const ros::Publisher& pub)
+void twist_callback(const geometry_msgs::TwistStamped::ConstPtr& msg, const gtsam::Pose3& iTv, int odom_freq, 
+    const ros::Publisher& pub, const ros::Publisher& mav_pub)
 {
     rev_twist_msg = *msg;
-    
+
     // need to be tested
     gtsam::Pose3 vicon = fromGeometryPose(rev_pose_msg.pose);
     gtsam::Pose3 imu   = vicon* iTv.inverse();
@@ -75,7 +78,8 @@ void twist_callback(const geometry_msgs::TwistStamped::ConstPtr& msg, const gtsa
         send_odom_msg.twist.twist.linear.y = imu_vel.y();
         send_odom_msg.twist.twist.linear.z = imu_vel.z();
         send_odom_msg.twist.twist.angular  = rev_twist_msg.twist.angular;
-        
+        send_mav_pos_msg.pose = fromGtsamPose(imu);
+        mav_pub.publish(send_mav_pos_msg);
         // send_last_time = send_odom_msg.header.stamp;
         pub.publish(send_odom_msg);
     // }
@@ -93,15 +97,23 @@ int main(int argc, char *argv[])
 
     ros::Duration(1.0).sleep();
 
-    std::string pose_sub_topic  = "/mavros/vision_pose/pose";
+    std::string pose_sub_topic  = "/vrpn_client_node/Quad13_ipn/pose";
     std::string twist_sub_topic = "/vrpn_client_node/Quad13_ipn/twist";
     std::string acc_sub_topic   = "/vrpn_client_node/Quad13_ipn/accel";
     std::string odom_pub_topic  = "/vicon/odom";
+    std::string mav_pub_topic   = "/mavros/vision_pose/pose";
+    std::string extrinsic_name  = "extrinsic.yaml";  
+
+    nh.getParam("vicon_pose_topic",  pose_sub_topic);
+    nh.getParam("vicon_twist_topic", twist_sub_topic);
+    nh.getParam("vicon_acc_topic",   acc_sub_topic);
+    nh.getParam("extri_params_file", extrinsic_name);
+    nh.getParam("mav_pose_topic",    mav_pub_topic);
 
     ros::Subscriber pose_sub, twist_sub;
-    ros::Publisher  odom_pub;
+    ros::Publisher  odom_pub, mav_odom_pub;
     
-    YAML::Node config = YAML::LoadFile("/home/amov/Fast250/src/px4ctrl/config/extrinsic.yaml");  
+    YAML::Node config = YAML::LoadFile(extrinsic_name);  
     double qw = config["qw"].as<double>();
     double qx = config["qx"].as<double>();
     double qy = config["qy"].as<double>();
@@ -115,9 +127,10 @@ int main(int argc, char *argv[])
     std::cout << "imu_T_vicon: \n";
     imu_T_vicon.print();
 
-    odom_pub  = nh.advertise<nav_msgs::Odometry>         (odom_pub_topic, 10);
-    pose_sub  = nh.subscribe<geometry_msgs::PoseStamped> (pose_sub_topic, 10, boost::bind(pose_callback, _1));
-    twist_sub = nh.subscribe<geometry_msgs::TwistStamped>(twist_sub_topic, 10, boost::bind(twist_callback, _1, imu_T_vicon, odom_freq, odom_pub));
+    odom_pub     = nh.advertise<nav_msgs::Odometry>         (odom_pub_topic,  100);
+    mav_odom_pub = nh.advertise<geometry_msgs::PoseStamped> (mav_pub_topic,   100);
+    pose_sub     = nh.subscribe<geometry_msgs::PoseStamped> (pose_sub_topic,  100, boost::bind(pose_callback, _1));
+    twist_sub    = nh.subscribe<geometry_msgs::TwistStamped>(twist_sub_topic, 100, boost::bind(twist_callback, _1, imu_T_vicon, odom_freq, odom_pub, mav_odom_pub));
 
     ros::Rate r(100);
     while (ros::ok())

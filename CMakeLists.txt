@@ -110,3 +110,22 @@ target_link_libraries(test_jpcm
   gtsam_unstable
   ${YAML_CPP_LIBRARIES}
 )
+
+add_executable(test_fusion      
+  test/test_fusion.cpp
+  src/controller.cpp
+  src/factors.cpp
+  src/PX4CtrlParam.cpp
+  src/input.cpp
+  src/Marginalization.cpp
+  src/GTSAMUtils.cpp
+)
+
+add_dependencies(test_fusion quadrotor_msgs geometry_msgs)
+
+target_link_libraries(test_fusion
+  ${catkin_LIBRARIES}
+  gtsam
+  gtsam_unstable
+  ${YAML_CPP_LIBRARIES}
+)

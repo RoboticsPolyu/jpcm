@@ -73,12 +73,15 @@ public:
   {
     DFBC = 0x01,
     MPC,
-    JPCM
+    JPCM,
+    MAX
   };
 
   DFBControl(Parameter_t &);
   
   ~DFBControl();
+
+  quadrotor_msgs::Px4ctrlDebug fusion(const Odom_Data_t &odom, const Imu_Data_t &imu_raw, const Odom_Data_t &GT);
 
   quadrotor_msgs::Px4ctrlDebug calculateControl(const Desired_State_t &des, const Odom_Data_t &odom, const Imu_Data_t &imu, Controller_Output_t &thr_bodyrate_u);
 
@@ -98,11 +101,15 @@ public:
 
   void set_hover_thrust(float hover_thrust) { thr2acc_ = param_.gra / hover_thrust; }
 
-  const Parameter_t & get_param() { return param_; };
+  Odom_Data_t addNoise(const Odom_Data_t &odom);
 
+  const Parameter_t & get_param() { return param_; };
+  
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
 private:
+  const uint16_t IDX_START = 100;
+  
   Parameter_t param_;
   quadrotor_msgs::Px4ctrlDebug debug_msg_;
   std::queue<std::pair<ros::Time, double>> timed_thrust_;
@@ -129,6 +136,10 @@ private:
   void buildFactorGraph(gtsam::NonlinearFactorGraph& _graph, gtsam::Values& _initial_value, 
                         const std::vector<Desired_State_t> &des_v, const std::vector<Odom_Data_t> &odom_v, const std::vector<Imu_Data_t> &imu_v, double dt);
 
+  void  buildFactorGraph(gtsam::NonlinearFactorGraph& _graph, gtsam::Values& _initial_value, 
+                        const std::vector<Odom_Data_t> &odom_v, 
+                        const std::vector<Imu_Data_t> &imu_v, double dt);
+
   std::vector<Desired_State_t> des_data_v_;
   gtsam::NonlinearFactorGraph  graph_positioning_;
   gtsam::Values                initial_value_positioning_;
@@ -152,9 +163,17 @@ private:
   std::default_random_engine meas_vy_gen;
   std::default_random_engine meas_vz_gen;
 
-  std::normal_distribution<double> position_noise;
-  std::normal_distribution<double> rotation_noise;
-  std::normal_distribution<double> velocity_noise;
+  std::normal_distribution<double> position_noise_x;
+  std::normal_distribution<double> rotation_noise_x;
+  std::normal_distribution<double> velocity_noise_x;
+
+  std::normal_distribution<double> position_noise_y;
+  std::normal_distribution<double> rotation_noise_y;
+  std::normal_distribution<double> velocity_noise_y;
+
+  std::normal_distribution<double> position_noise_z;
+  std::normal_distribution<double> rotation_noise_z;
+  std::normal_distribution<double> velocity_noise_z;
 
 protected:
   std::ofstream log_;

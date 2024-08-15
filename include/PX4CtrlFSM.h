@@ -39,7 +39,7 @@ public:
 	ExtendedState_Data_t extended_state_data;
 	Odom_Data_t          odom_data;
 	Imu_Data_t           imu_data;
-	Imu_Datas_t          imu_raw_data;
+	Imu_Data_t           imu_raw_data;
 	Acc_Data_t           acc_data; // linear acc
 	float                 hover_thrust;
 	
@@ -109,6 +109,8 @@ private:
 	void publish_bodyrate_ctrl(const Controller_Output_t &thr_bodyrate_u, const ros::Time &stamp);
 	void publish_attitude_ctrl(const Controller_Output_t &thr_bodyrate_u, const ros::Time &stamp);
 	void publish_trigger(const nav_msgs::Odometry &odom_msg);
+
+	DFBControl::CTRL_MODE cvt_ctrl_mode(uint8_t ctrl_mode);
 };
 
 #endif

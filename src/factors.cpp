@@ -127,10 +127,15 @@ namespace UAVFactor
       gtsam::Matrix33 J_rwg, J_pe_roti, J_ve_rot1, J_dv_rit, J_dv_v;
       gtsam::Matrix33 J_ri, J_rj, J_dr;
       gtsam::Matrix36 J_ba, J_bg;
+      gtsam::Vector3 cor_acc = bias_i.correctAccelerometer(acc_, J_ba);
+      gtsam::Vector3 cor_gyro = bias_i.correctGyroscope(gyro_, J_bg);
 
-      gtsam::Vector3 pos_err = r_w_mi.unrotate(p_w_mj - vel_i * dt_ + 0.5f * gI_ * dtt - p_w_mi, J_pe_roti) - 0.5f * bias_i.correctAccelerometer(acc_, J_ba) * dtt;
-      gtsam::Vector3 rot_err = Rot3::Logmap(r_w_mi.between(r_w_mj, J_ri, J_rj), J_dr) - bias_i.correctGyroscope(gyro_, J_bg) * dt_;
-      gtsam::Vector3 vel_err = r_w_mi.unrotate(vel_j - vel_i - gI_ * dt_, J_ve_rot1) - bias_i.correctAccelerometer(acc_, J_ba) * dt_;
+      // std::cout << "cor_acc: " << cor_acc << std::endl;
+      // std::cout << "cor_gyro: " << cor_gyro << std::endl;
+      
+      gtsam::Vector3 pos_err = r_w_mi.unrotate(p_w_mj - vel_i * dt_ - 0.5f * gI_ * dtt - p_w_mi, J_pe_roti) - 0.5f * cor_acc * dtt;
+      gtsam::Vector3 rot_err = Rot3::Logmap(r_w_mi.between(r_w_mj, J_ri, J_rj), J_dr) - cor_gyro * dt_;
+      gtsam::Vector3 vel_err = r_w_mi.unrotate(vel_j - vel_i - gI_ * dt_, J_ve_rot1) - cor_acc * dt_;
 
       Matrix96 J_e_pi, J_e_posej;
 

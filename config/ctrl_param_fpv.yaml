@@ -11,6 +11,7 @@ max_manual_vel   : 1.0
 max_angle: 30  # Attitude angle limit in degree. A negative value means no limit.
 low_voltage: 13.2 # 4S battery
 odom_freq: 100
+ctrl_mode: 3      # DFBC 1 MPC 2 JPCM 3
 
 rc_reverse: # *
     roll: false
@@ -94,20 +95,20 @@ y: 0.00272349349494
 z: -0.0106913068398
 
 Factor_graph:
-    LOG_NAME:              TGYRO
+    LOG_NAME: TGYRO
 
-    PRI_VICON_POS_COV:     0.14
+    PRI_VICON_POS_COV: 0.14
     PRI_VICON_VEL_COV: 0.07
 
     # PRI_VICON_POS_COV:     0.001
     # PRI_VICON_VEL_COV: 0.001
 
-    CONTROL_P_COV_X:   0.12
-    CONTROL_PF_COV_X:  0.01
-    CONTROL_P_COV_Y:   0.12
-    CONTROL_PF_COV_Y:  0.01
-    CONTROL_P_COV_Z:   0.12
-    CONTROL_PF_COV_Z:  0.01
+    CONTROL_P_COV_X:   0.14
+    CONTROL_PF_COV_X:  0.10
+    CONTROL_P_COV_Y:   0.14
+    CONTROL_PF_COV_Y:  0.10
+    CONTROL_P_COV_Z:   0.14
+    CONTROL_PF_COV_Z:  0.10
 
     # CONTROL_P_COV_X:   0.07
     # CONTROL_PF_COV_X:  0.02
@@ -142,7 +143,7 @@ Factor_graph:
     # VEL_MEAS_COV:   0.001
     # ROT_MEAS_COV:   0.001
 
-    OPT_LENS_TRAJ: 3
+    OPT_LENS_TRAJ: 20
     WINDOW_SIZE:   3
 
     POS_MEAS_MEAN:  0.00
@@ -161,4 +162,5 @@ Factor_graph:
     gyro_bias_sigma:  0.0001
     prior_acc_sigma:  0.1
     prior_gyro_sigma: 0.01
+
 

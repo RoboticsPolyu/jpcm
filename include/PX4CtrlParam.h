@@ -100,18 +100,20 @@ public:
 		double alpha; 
 
 		double POS_MEAS_MEAN;
-    double POS_MEAS_COV;
-    double VEL_MEAS_COV;
-    double ROT_MEAS_COV;
+		double POS_MEAS_COV;
+		double VEL_MEAS_COV;
+		double ROT_MEAS_COV;
 
-    double PRIOR_POS_MEAS_COV;
-    double PRIOR_VEL_MEAS_COV;
-    double PRIOR_ROT_MEAS_COV;
+		double PRIOR_POS_MEAS_COV;
+		double PRIOR_VEL_MEAS_COV;
+		double PRIOR_ROT_MEAS_COV;
 
 		double acc_sigma;
-    double gyro_sigma;
-    double acc_bias_imu;
-    double gyro_bias_sigma;
+		double gyro_sigma;
+		double acc_bias_imu;
+		double gyro_bias_sigma;
+		double prior_acc_sigma;
+		double prior_gyro_sigma;
 	};
 
 	Gain gain;
@@ -121,7 +123,8 @@ public:
 	ThrustMapping thr_map;
 	AutoTakeoffLand takeoff_land;
 	FactorGraph factor_graph;
-	
+	int ctrl_mode;
+
 	int pose_solver;
 	double mass;
 	double gra;

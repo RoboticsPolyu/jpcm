@@ -119,6 +119,9 @@ void Parameter_t::config_from_ros_handle(const ros::NodeHandle &nh)
 	read_essential_param(nh, "Factor_graph/gyro_sigma", factor_graph.gyro_sigma);
 	read_essential_param(nh, "Factor_graph/acc_bias_imu", factor_graph.acc_bias_imu);
 	read_essential_param(nh, "Factor_graph/gyro_bias_sigma", factor_graph.gyro_bias_sigma);
+	read_essential_param(nh, "Factor_graph/prior_acc_sigma", factor_graph.prior_acc_sigma);
+	read_essential_param(nh, "Factor_graph/prior_gyro_sigma", factor_graph.prior_gyro_sigma);
+	read_essential_param(nh, "ctrl_mode", ctrl_mode);
 
 	max_angle /= (180.0 / M_PI);
 
