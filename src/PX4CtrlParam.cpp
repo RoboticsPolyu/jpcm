@@ -115,10 +115,20 @@ void Parameter_t::config_from_ros_handle(const ros::NodeHandle &nh)
 	read_essential_param(nh, "Factor_graph/PRIOR_VEL_MEAS_COV", factor_graph.PRIOR_VEL_MEAS_COV);
 	read_essential_param(nh, "Factor_graph/PRIOR_ROT_MEAS_COV", factor_graph.PRIOR_ROT_MEAS_COV);
 
-	read_essential_param(nh, "Factor_graph/acc_sigma", factor_graph.acc_sigma);
-	read_essential_param(nh, "Factor_graph/gyro_sigma", factor_graph.gyro_sigma);
-	read_essential_param(nh, "Factor_graph/acc_bias_imu", factor_graph.acc_bias_imu);
-	read_essential_param(nh, "Factor_graph/gyro_bias_sigma", factor_graph.gyro_bias_sigma);
+	read_essential_param(nh, "Factor_graph/acc_sigma_x", factor_graph.acc_sigma_x);
+	read_essential_param(nh, "Factor_graph/acc_bias_imu_x", factor_graph.acc_bias_imu_x);
+	read_essential_param(nh, "Factor_graph/acc_sigma_y", factor_graph.acc_sigma_y);
+	read_essential_param(nh, "Factor_graph/acc_bias_imu_y", factor_graph.acc_bias_imu_y);
+	read_essential_param(nh, "Factor_graph/acc_sigma_z", factor_graph.acc_sigma_z);
+	read_essential_param(nh, "Factor_graph/acc_bias_imu_z", factor_graph.acc_bias_imu_z);
+
+	read_essential_param(nh, "Factor_graph/gyro_sigma_x", factor_graph.gyro_sigma_x);
+	read_essential_param(nh, "Factor_graph/gyro_bias_sigma_x", factor_graph.gyro_bias_sigma_x);
+	read_essential_param(nh, "Factor_graph/gyro_sigma_y", factor_graph.gyro_sigma_y);
+	read_essential_param(nh, "Factor_graph/gyro_bias_sigma_y", factor_graph.gyro_bias_sigma_y);
+	read_essential_param(nh, "Factor_graph/gyro_sigma_z", factor_graph.gyro_sigma_z);
+	read_essential_param(nh, "Factor_graph/gyro_bias_sigma_z", factor_graph.gyro_bias_sigma_z);
+
 	read_essential_param(nh, "Factor_graph/prior_acc_sigma", factor_graph.prior_acc_sigma);
 	read_essential_param(nh, "Factor_graph/prior_gyro_sigma", factor_graph.prior_gyro_sigma);
 	read_essential_param(nh, "ctrl_mode", ctrl_mode);

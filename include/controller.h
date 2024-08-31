@@ -77,11 +77,15 @@ public:
     MAX
   };
 
+  using Dist_Dou = std::normal_distribution<double>;
+
   DFBControl(Parameter_t &);
   
   ~DFBControl();
 
   quadrotor_msgs::Px4ctrlDebug fusion(const Odom_Data_t &odom, const Imu_Data_t &imu_raw, const Odom_Data_t &GT);
+  
+  bool initializeState(const std::vector<Imu_Data_t> &imu_raw, const std::vector<Odom_Data_t> &GT, gtsam::Vector3 &init_vel, gtsam::Vector6 &init_bias);
 
   quadrotor_msgs::Px4ctrlDebug calculateControl(const Desired_State_t &des, const Odom_Data_t &odom, const Imu_Data_t &imu, Controller_Output_t &thr_bodyrate_u);
 
@@ -101,7 +105,7 @@ public:
 
   void set_hover_thrust(float hover_thrust) { thr2acc_ = param_.gra / hover_thrust; }
 
-  Odom_Data_t addNoise(const Odom_Data_t &odom);
+  Odom_Data_t add_Guassian_noise(const Odom_Data_t &odom);
 
   const Parameter_t & get_param() { return param_; };
   
@@ -125,6 +129,8 @@ private:
   std::vector<Odom_Data_t> odom_data_v_;
   std::vector<Odom_Data_t> odom_data_noise_;
   std::vector<Imu_Data_t>  imu_data_v_;
+  
+  bool init_state_flag = false;
 
   double fromQuaternion2yaw(Eigen::Quaterniond q);
   double limit_value(double upper_bound,  double input, double lower_bound);
@@ -134,7 +140,8 @@ private:
                         const std::vector<Desired_State_t> &des_v, const Odom_Data_t &odom, double dt);
 
   void buildFactorGraph(gtsam::NonlinearFactorGraph& _graph, gtsam::Values& _initial_value, 
-                        const std::vector<Desired_State_t> &des_v, const std::vector<Odom_Data_t> &odom_v, const std::vector<Imu_Data_t> &imu_v, double dt);
+                        const std::vector<Desired_State_t> &des_v, const std::vector<Odom_Data_t> &odom_v, 
+                        const std::vector<Imu_Data_t> &imu_v, double dt);
 
   void  buildFactorGraph(gtsam::NonlinearFactorGraph& _graph, gtsam::Values& _initial_value, 
                         const std::vector<Odom_Data_t> &odom_v, 
@@ -151,29 +158,17 @@ private:
   uint16_t                     opt_traj_lens_;
   uint16_t                     window_lens_;
 
-  std::default_random_engine meas_x_gen;
-  std::default_random_engine meas_y_gen;
-  std::default_random_engine meas_z_gen;
-  
-  std::default_random_engine meas_rx_gen;
-  std::default_random_engine meas_ry_gen;
-  std::default_random_engine meas_rz_gen;
+  Dist_Dou position_noise_x;
+  Dist_Dou rotation_noise_x;
+  Dist_Dou velocity_noise_x;
 
-  std::default_random_engine meas_vx_gen;
-  std::default_random_engine meas_vy_gen;
-  std::default_random_engine meas_vz_gen;
+  Dist_Dou position_noise_y;
+  Dist_Dou rotation_noise_y;
+  Dist_Dou velocity_noise_y;
 
-  std::normal_distribution<double> position_noise_x;
-  std::normal_distribution<double> rotation_noise_x;
-  std::normal_distribution<double> velocity_noise_x;
-
-  std::normal_distribution<double> position_noise_y;
-  std::normal_distribution<double> rotation_noise_y;
-  std::normal_distribution<double> velocity_noise_y;
-
-  std::normal_distribution<double> position_noise_z;
-  std::normal_distribution<double> rotation_noise_z;
-  std::normal_distribution<double> velocity_noise_z;
+  Dist_Dou position_noise_z;
+  Dist_Dou rotation_noise_z;
+  Dist_Dou velocity_noise_z;
 
 protected:
   std::ofstream log_;

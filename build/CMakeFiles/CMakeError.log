@@ -46,3 +46,293 @@ ninja: build stopped: subcommand failed.
 
 
 
+Performing C SOURCE FILE Test CMAKE_HAVE_LIBC_PTHREAD failed with the following output:
+Change Dir: /home/amov/Fast250/src/px4ctrl/build/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/make cmTC_2eac7/fast && /usr/bin/make -f CMakeFiles/cmTC_2eac7.dir/build.make CMakeFiles/cmTC_2eac7.dir/build
+make[1]: Entering directory '/home/amov/Fast250/src/px4ctrl/build/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_2eac7.dir/src.c.o
+/usr/bin/cc   -DCMAKE_HAVE_LIBC_PTHREAD   -o CMakeFiles/cmTC_2eac7.dir/src.c.o   -c /home/amov/Fast250/src/px4ctrl/build/CMakeFiles/CMakeTmp/src.c
+Linking C executable cmTC_2eac7
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_2eac7.dir/link.txt --verbose=1
+/usr/bin/cc  -DCMAKE_HAVE_LIBC_PTHREAD    -rdynamic CMakeFiles/cmTC_2eac7.dir/src.c.o  -o cmTC_2eac7 
+/usr/bin/ld: CMakeFiles/cmTC_2eac7.dir/src.c.o: in function `main':
+src.c:(.text+0x48): undefined reference to `pthread_create'
+/usr/bin/ld: src.c:(.text+0x50): undefined reference to `pthread_detach'
+/usr/bin/ld: src.c:(.text+0x5c): undefined reference to `pthread_join'
+collect2: error: ld returned 1 exit status
+make[1]: *** [CMakeFiles/cmTC_2eac7.dir/build.make:87: cmTC_2eac7] Error 1
+make[1]: Leaving directory '/home/amov/Fast250/src/px4ctrl/build/CMakeFiles/CMakeTmp'
+make: *** [Makefile:121: cmTC_2eac7/fast] Error 2
+
+
+Source file was:
+#include <pthread.h>
+
+void* test_func(void* data)
+{
+  return data;
+}
+
+int main(void)
+{
+  pthread_t thread;
+  pthread_create(&thread, NULL, test_func, NULL);
+  pthread_detach(thread);
+  pthread_join(thread, NULL);
+  pthread_atfork(NULL, NULL, NULL);
+  pthread_exit(NULL);
+
+  return 0;
+}
+
+Determining if the function pthread_create exists in the pthreads failed with the following output:
+Change Dir: /home/amov/Fast250/src/px4ctrl/build/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/make cmTC_2c2fe/fast && /usr/bin/make -f CMakeFiles/cmTC_2c2fe.dir/build.make CMakeFiles/cmTC_2c2fe.dir/build
+make[1]: Entering directory '/home/amov/Fast250/src/px4ctrl/build/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_2c2fe.dir/CheckFunctionExists.c.o
+/usr/bin/cc   -DCHECK_FUNCTION_EXISTS=pthread_create   -o CMakeFiles/cmTC_2c2fe.dir/CheckFunctionExists.c.o   -c /usr/share/cmake-3.16/Modules/CheckFunctionExists.c
+Linking C executable cmTC_2c2fe
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_2c2fe.dir/link.txt --verbose=1
+/usr/bin/cc  -DCHECK_FUNCTION_EXISTS=pthread_create    -rdynamic CMakeFiles/cmTC_2c2fe.dir/CheckFunctionExists.c.o  -o cmTC_2c2fe  -lpthreads 
+/usr/bin/ld: cannot find -lpthreads
+collect2: error: ld returned 1 exit status
+make[1]: *** [CMakeFiles/cmTC_2c2fe.dir/build.make:87: cmTC_2c2fe] Error 1
+make[1]: Leaving directory '/home/amov/Fast250/src/px4ctrl/build/CMakeFiles/CMakeTmp'
+make: *** [Makefile:121: cmTC_2c2fe/fast] Error 2
+
+
+
+Performing C SOURCE FILE Test CMAKE_HAVE_LIBC_PTHREAD failed with the following output:
+Change Dir: /home/amov/Fast250/src/px4ctrl/build/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/make cmTC_76020/fast && /usr/bin/make -f CMakeFiles/cmTC_76020.dir/build.make CMakeFiles/cmTC_76020.dir/build
+make[1]: Entering directory '/home/amov/Fast250/src/px4ctrl/build/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_76020.dir/src.c.o
+/usr/bin/cc   -DCMAKE_HAVE_LIBC_PTHREAD   -o CMakeFiles/cmTC_76020.dir/src.c.o   -c /home/amov/Fast250/src/px4ctrl/build/CMakeFiles/CMakeTmp/src.c
+Linking C executable cmTC_76020
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_76020.dir/link.txt --verbose=1
+/usr/bin/cc  -DCMAKE_HAVE_LIBC_PTHREAD    -rdynamic CMakeFiles/cmTC_76020.dir/src.c.o  -o cmTC_76020 
+/usr/bin/ld: CMakeFiles/cmTC_76020.dir/src.c.o: in function `main':
+src.c:(.text+0x48): undefined reference to `pthread_create'
+/usr/bin/ld: src.c:(.text+0x50): undefined reference to `pthread_detach'
+/usr/bin/ld: src.c:(.text+0x5c): undefined reference to `pthread_join'
+collect2: error: ld returned 1 exit status
+make[1]: *** [CMakeFiles/cmTC_76020.dir/build.make:87: cmTC_76020] Error 1
+make[1]: Leaving directory '/home/amov/Fast250/src/px4ctrl/build/CMakeFiles/CMakeTmp'
+make: *** [Makefile:121: cmTC_76020/fast] Error 2
+
+
+Source file was:
+#include <pthread.h>
+
+void* test_func(void* data)
+{
+  return data;
+}
+
+int main(void)
+{
+  pthread_t thread;
+  pthread_create(&thread, NULL, test_func, NULL);
+  pthread_detach(thread);
+  pthread_join(thread, NULL);
+  pthread_atfork(NULL, NULL, NULL);
+  pthread_exit(NULL);
+
+  return 0;
+}
+
+Determining if the function pthread_create exists in the pthreads failed with the following output:
+Change Dir: /home/amov/Fast250/src/px4ctrl/build/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/make cmTC_b8733/fast && /usr/bin/make -f CMakeFiles/cmTC_b8733.dir/build.make CMakeFiles/cmTC_b8733.dir/build
+make[1]: Entering directory '/home/amov/Fast250/src/px4ctrl/build/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_b8733.dir/CheckFunctionExists.c.o
+/usr/bin/cc   -DCHECK_FUNCTION_EXISTS=pthread_create   -o CMakeFiles/cmTC_b8733.dir/CheckFunctionExists.c.o   -c /usr/share/cmake-3.16/Modules/CheckFunctionExists.c
+Linking C executable cmTC_b8733
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_b8733.dir/link.txt --verbose=1
+/usr/bin/cc  -DCHECK_FUNCTION_EXISTS=pthread_create    -rdynamic CMakeFiles/cmTC_b8733.dir/CheckFunctionExists.c.o  -o cmTC_b8733  -lpthreads 
+/usr/bin/ld: cannot find -lpthreads
+collect2: error: ld returned 1 exit status
+make[1]: *** [CMakeFiles/cmTC_b8733.dir/build.make:87: cmTC_b8733] Error 1
+make[1]: Leaving directory '/home/amov/Fast250/src/px4ctrl/build/CMakeFiles/CMakeTmp'
+make: *** [Makefile:121: cmTC_b8733/fast] Error 2
+
+
+
+Performing C SOURCE FILE Test CMAKE_HAVE_LIBC_PTHREAD failed with the following output:
+Change Dir: /home/amov/Fast250/src/px4ctrl/build/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/make cmTC_28e1d/fast && /usr/bin/make -f CMakeFiles/cmTC_28e1d.dir/build.make CMakeFiles/cmTC_28e1d.dir/build
+make[1]: Entering directory '/home/amov/Fast250/src/px4ctrl/build/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_28e1d.dir/src.c.o
+/usr/bin/cc   -DCMAKE_HAVE_LIBC_PTHREAD   -o CMakeFiles/cmTC_28e1d.dir/src.c.o   -c /home/amov/Fast250/src/px4ctrl/build/CMakeFiles/CMakeTmp/src.c
+Linking C executable cmTC_28e1d
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_28e1d.dir/link.txt --verbose=1
+/usr/bin/cc  -DCMAKE_HAVE_LIBC_PTHREAD    -rdynamic CMakeFiles/cmTC_28e1d.dir/src.c.o  -o cmTC_28e1d 
+/usr/bin/ld: CMakeFiles/cmTC_28e1d.dir/src.c.o: in function `main':
+src.c:(.text+0x48): undefined reference to `pthread_create'
+/usr/bin/ld: src.c:(.text+0x50): undefined reference to `pthread_detach'
+/usr/bin/ld: src.c:(.text+0x5c): undefined reference to `pthread_join'
+collect2: error: ld returned 1 exit status
+make[1]: *** [CMakeFiles/cmTC_28e1d.dir/build.make:87: cmTC_28e1d] Error 1
+make[1]: Leaving directory '/home/amov/Fast250/src/px4ctrl/build/CMakeFiles/CMakeTmp'
+make: *** [Makefile:121: cmTC_28e1d/fast] Error 2
+
+
+Source file was:
+#include <pthread.h>
+
+void* test_func(void* data)
+{
+  return data;
+}
+
+int main(void)
+{
+  pthread_t thread;
+  pthread_create(&thread, NULL, test_func, NULL);
+  pthread_detach(thread);
+  pthread_join(thread, NULL);
+  pthread_atfork(NULL, NULL, NULL);
+  pthread_exit(NULL);
+
+  return 0;
+}
+
+Determining if the function pthread_create exists in the pthreads failed with the following output:
+Change Dir: /home/amov/Fast250/src/px4ctrl/build/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/make cmTC_876c6/fast && /usr/bin/make -f CMakeFiles/cmTC_876c6.dir/build.make CMakeFiles/cmTC_876c6.dir/build
+make[1]: Entering directory '/home/amov/Fast250/src/px4ctrl/build/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_876c6.dir/CheckFunctionExists.c.o
+/usr/bin/cc   -DCHECK_FUNCTION_EXISTS=pthread_create   -o CMakeFiles/cmTC_876c6.dir/CheckFunctionExists.c.o   -c /usr/share/cmake-3.16/Modules/CheckFunctionExists.c
+Linking C executable cmTC_876c6
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_876c6.dir/link.txt --verbose=1
+/usr/bin/cc  -DCHECK_FUNCTION_EXISTS=pthread_create    -rdynamic CMakeFiles/cmTC_876c6.dir/CheckFunctionExists.c.o  -o cmTC_876c6  -lpthreads 
+/usr/bin/ld: cannot find -lpthreads
+collect2: error: ld returned 1 exit status
+make[1]: *** [CMakeFiles/cmTC_876c6.dir/build.make:87: cmTC_876c6] Error 1
+make[1]: Leaving directory '/home/amov/Fast250/src/px4ctrl/build/CMakeFiles/CMakeTmp'
+make: *** [Makefile:121: cmTC_876c6/fast] Error 2
+
+
+
+Performing C SOURCE FILE Test CMAKE_HAVE_LIBC_PTHREAD failed with the following output:
+Change Dir: /home/amov/Fast250/src/px4ctrl/build/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/make cmTC_538ca/fast && /usr/bin/make -f CMakeFiles/cmTC_538ca.dir/build.make CMakeFiles/cmTC_538ca.dir/build
+make[1]: Entering directory '/home/amov/Fast250/src/px4ctrl/build/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_538ca.dir/src.c.o
+/usr/bin/cc   -DCMAKE_HAVE_LIBC_PTHREAD   -o CMakeFiles/cmTC_538ca.dir/src.c.o   -c /home/amov/Fast250/src/px4ctrl/build/CMakeFiles/CMakeTmp/src.c
+Linking C executable cmTC_538ca
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_538ca.dir/link.txt --verbose=1
+/usr/bin/cc  -DCMAKE_HAVE_LIBC_PTHREAD    -rdynamic CMakeFiles/cmTC_538ca.dir/src.c.o  -o cmTC_538ca 
+/usr/bin/ld: CMakeFiles/cmTC_538ca.dir/src.c.o: in function `main':
+src.c:(.text+0x48): undefined reference to `pthread_create'
+/usr/bin/ld: src.c:(.text+0x50): undefined reference to `pthread_detach'
+/usr/bin/ld: src.c:(.text+0x5c): undefined reference to `pthread_join'
+collect2: error: ld returned 1 exit status
+make[1]: *** [CMakeFiles/cmTC_538ca.dir/build.make:87: cmTC_538ca] Error 1
+make[1]: Leaving directory '/home/amov/Fast250/src/px4ctrl/build/CMakeFiles/CMakeTmp'
+make: *** [Makefile:121: cmTC_538ca/fast] Error 2
+
+
+Source file was:
+#include <pthread.h>
+
+void* test_func(void* data)
+{
+  return data;
+}
+
+int main(void)
+{
+  pthread_t thread;
+  pthread_create(&thread, NULL, test_func, NULL);
+  pthread_detach(thread);
+  pthread_join(thread, NULL);
+  pthread_atfork(NULL, NULL, NULL);
+  pthread_exit(NULL);
+
+  return 0;
+}
+
+Determining if the function pthread_create exists in the pthreads failed with the following output:
+Change Dir: /home/amov/Fast250/src/px4ctrl/build/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/make cmTC_b7138/fast && /usr/bin/make -f CMakeFiles/cmTC_b7138.dir/build.make CMakeFiles/cmTC_b7138.dir/build
+make[1]: Entering directory '/home/amov/Fast250/src/px4ctrl/build/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_b7138.dir/CheckFunctionExists.c.o
+/usr/bin/cc   -DCHECK_FUNCTION_EXISTS=pthread_create   -o CMakeFiles/cmTC_b7138.dir/CheckFunctionExists.c.o   -c /usr/share/cmake-3.16/Modules/CheckFunctionExists.c
+Linking C executable cmTC_b7138
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_b7138.dir/link.txt --verbose=1
+/usr/bin/cc  -DCHECK_FUNCTION_EXISTS=pthread_create    -rdynamic CMakeFiles/cmTC_b7138.dir/CheckFunctionExists.c.o  -o cmTC_b7138  -lpthreads 
+/usr/bin/ld: cannot find -lpthreads
+collect2: error: ld returned 1 exit status
+make[1]: *** [CMakeFiles/cmTC_b7138.dir/build.make:87: cmTC_b7138] Error 1
+make[1]: Leaving directory '/home/amov/Fast250/src/px4ctrl/build/CMakeFiles/CMakeTmp'
+make: *** [Makefile:121: cmTC_b7138/fast] Error 2
+
+
+
+Performing C SOURCE FILE Test CMAKE_HAVE_LIBC_PTHREAD failed with the following output:
+Change Dir: /home/amov/Fast250/src/px4ctrl/build/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/make cmTC_0dbef/fast && /usr/bin/make -f CMakeFiles/cmTC_0dbef.dir/build.make CMakeFiles/cmTC_0dbef.dir/build
+make[1]: Entering directory '/home/amov/Fast250/src/px4ctrl/build/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_0dbef.dir/src.c.o
+/usr/bin/cc   -DCMAKE_HAVE_LIBC_PTHREAD   -o CMakeFiles/cmTC_0dbef.dir/src.c.o   -c /home/amov/Fast250/src/px4ctrl/build/CMakeFiles/CMakeTmp/src.c
+Linking C executable cmTC_0dbef
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_0dbef.dir/link.txt --verbose=1
+/usr/bin/cc  -DCMAKE_HAVE_LIBC_PTHREAD    -rdynamic CMakeFiles/cmTC_0dbef.dir/src.c.o  -o cmTC_0dbef 
+/usr/bin/ld: CMakeFiles/cmTC_0dbef.dir/src.c.o: in function `main':
+src.c:(.text+0x48): undefined reference to `pthread_create'
+/usr/bin/ld: src.c:(.text+0x50): undefined reference to `pthread_detach'
+/usr/bin/ld: src.c:(.text+0x5c): undefined reference to `pthread_join'
+collect2: error: ld returned 1 exit status
+make[1]: *** [CMakeFiles/cmTC_0dbef.dir/build.make:87: cmTC_0dbef] Error 1
+make[1]: Leaving directory '/home/amov/Fast250/src/px4ctrl/build/CMakeFiles/CMakeTmp'
+make: *** [Makefile:121: cmTC_0dbef/fast] Error 2
+
+
+Source file was:
+#include <pthread.h>
+
+void* test_func(void* data)
+{
+  return data;
+}
+
+int main(void)
+{
+  pthread_t thread;
+  pthread_create(&thread, NULL, test_func, NULL);
+  pthread_detach(thread);
+  pthread_join(thread, NULL);
+  pthread_atfork(NULL, NULL, NULL);
+  pthread_exit(NULL);
+
+  return 0;
+}
+
+Determining if the function pthread_create exists in the pthreads failed with the following output:
+Change Dir: /home/amov/Fast250/src/px4ctrl/build/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/make cmTC_cd970/fast && /usr/bin/make -f CMakeFiles/cmTC_cd970.dir/build.make CMakeFiles/cmTC_cd970.dir/build
+make[1]: Entering directory '/home/amov/Fast250/src/px4ctrl/build/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_cd970.dir/CheckFunctionExists.c.o
+/usr/bin/cc   -DCHECK_FUNCTION_EXISTS=pthread_create   -o CMakeFiles/cmTC_cd970.dir/CheckFunctionExists.c.o   -c /usr/share/cmake-3.16/Modules/CheckFunctionExists.c
+Linking C executable cmTC_cd970
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_cd970.dir/link.txt --verbose=1
+/usr/bin/cc  -DCHECK_FUNCTION_EXISTS=pthread_create    -rdynamic CMakeFiles/cmTC_cd970.dir/CheckFunctionExists.c.o  -o cmTC_cd970  -lpthreads 
+/usr/bin/ld: cannot find -lpthreads
+collect2: error: ld returned 1 exit status
+make[1]: *** [CMakeFiles/cmTC_cd970.dir/build.make:87: cmTC_cd970] Error 1
+make[1]: Leaving directory '/home/amov/Fast250/src/px4ctrl/build/CMakeFiles/CMakeTmp'
+make: *** [Makefile:121: cmTC_cd970/fast] Error 2
+
+
+

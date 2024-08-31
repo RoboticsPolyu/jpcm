@@ -108,10 +108,20 @@ public:
 		double PRIOR_VEL_MEAS_COV;
 		double PRIOR_ROT_MEAS_COV;
 
-		double acc_sigma;
-		double gyro_sigma;
-		double acc_bias_imu;
-		double gyro_bias_sigma;
+		double acc_sigma_x;
+		double acc_bias_imu_x;
+		double acc_sigma_y;
+		double acc_bias_imu_y;
+		double acc_sigma_z;
+		double acc_bias_imu_z;
+
+		double gyro_sigma_x;
+		double gyro_bias_sigma_x;
+		double gyro_sigma_y;
+		double gyro_bias_sigma_y;
+		double gyro_sigma_z;
+		double gyro_bias_sigma_z;
+
 		double prior_acc_sigma;
 		double prior_gyro_sigma;
 	};

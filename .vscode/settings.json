@@ -70,5 +70,6 @@
         "core": "cpp",
         "dense": "cpp",
         "*.ipp": "cpp"
-    }
+    },
+    "window.zoomLevel": -1
 }

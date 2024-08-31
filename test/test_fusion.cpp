@@ -76,14 +76,24 @@ int main(int argc, char *argv[])
             else
             {
                 odom_data.recv_new_msg = false;
-                std::cout << "odom_position: " << odom_data.p << std::endl;
-                std::cout << "acc: "           << imu_raw_data.a << std::endl;
-                std::cout << "gyro: "          << imu_raw_data.w << std::endl;
-                odom_data_noise = controller.addNoise(odom_data);
+                std::cout << "-------------------------------------  Odom adding noise   ------------------------------------" << std::endl;
+                std::cout << "odom_position: " << odom_data.p.transpose() << std::endl;
+                std::cout << "odom_vel: "      << odom_data.v.transpose() << std::endl;
+                std::cout << "acc: "           << imu_raw_data.a.transpose() << std::endl;
+                std::cout << "gyro: "          << imu_raw_data.w.transpose() << std::endl;
+                odom_data_noise = controller.add_Guassian_noise(odom_data);
+                std::cout << "odom_noise_position: " << odom_data_noise.p.transpose() << std::endl;
+                std::cout << "odom_noise_vel: "      << odom_data_noise.v.transpose() << std::endl;
             }
 
+            // std::cout << "Rx PI: " << gtsam::Rot3::Rx(-90.0/180.0*3.14159) *gtsam::Rot3::Ry(-90.0/180.0*3.14159) << std::endl;
+            
+            imu_raw_data_b = imu_raw_data;
             imu_raw_data_b.w = gtsam::Rot3::Rx(3.14159).rotate(imu_raw_data.w);
             imu_raw_data_b.a = gtsam::Rot3::Rx(3.14159).rotate(imu_raw_data.a);
+
+            // imu_raw_data_b.w = gtsam::Rot3::Rx(-90.0/180.0*3.14159) *gtsam::Rot3::Ry(-90.0/180.0*3.14159).rotate(imu_raw_data.w);
+            // imu_raw_data_b.a = gtsam::Rot3::Rx(-90.0/180.0*3.14159) *gtsam::Rot3::Ry(-90.0/180.0*3.14159).rotate(imu_raw_data.a);
 
             controller.fusion(odom_data_noise, imu_raw_data_b, odom_data);
         }

@@ -9,7 +9,7 @@
 # modified environment variables
 export CMAKE_PREFIX_PATH="/home/amov/Fast250/src/px4ctrl/build/devel:$CMAKE_PREFIX_PATH"
 export LD_LIBRARY_PATH='/opt/ros/noetic/lib:/opt/ros/noetic/lib/aarch64-linux-gnu:/usr/local/cuda/lib64:/usr/local/cuda/extras/CUPTI/lib64'
-export PATH='/opt/ros/noetic/bin:/home/amov/.vscode-server/cli/servers/Stable-eaa41d57266683296de7d118f574d0c2652e1fc4/server/bin/remote-cli:/home/amov/.local/bin:/home/amov/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/usr/local/cuda/bin'
+export PATH='/opt/ros/noetic/bin:/home/amov/.vscode-server/cli/servers/Stable-fee1edb8d6d72a0ddff41e5f71a671c23ed924b9/server/bin/remote-cli:/home/amov/.local/bin:/home/amov/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/usr/local/cuda/bin'
 export PKG_CONFIG_PATH='/opt/ros/noetic/lib/pkgconfig:/opt/ros/noetic/lib/aarch64-linux-gnu/pkgconfig:/usr/local/lib/pkgconfig'
 export PWD='/home/amov/Fast250/src/px4ctrl/build'
 export ROSLISP_PACKAGE_DIRECTORIES='/home/amov/Fast250/src/px4ctrl/build/devel/share/common-lisp'

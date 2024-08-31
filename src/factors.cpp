@@ -126,9 +126,9 @@ namespace UAVFactor
 
       gtsam::Matrix33 J_rwg, J_pe_roti, J_ve_rot1, J_dv_rit, J_dv_v;
       gtsam::Matrix33 J_ri, J_rj, J_dr;
-      gtsam::Matrix36 J_ba, J_bg;
-      gtsam::Vector3 cor_acc = bias_i.correctAccelerometer(acc_, J_ba);
-      gtsam::Vector3 cor_gyro = bias_i.correctGyroscope(gyro_, J_bg);
+      gtsam::Matrix36 J_acc_bias, J_gyro_bias;
+      gtsam::Vector3  cor_acc = bias_i.correctAccelerometer(acc_, J_acc_bias);
+      gtsam::Vector3  cor_gyro = bias_i.correctGyroscope(gyro_, J_gyro_bias);
 
       // std::cout << "cor_acc: " << cor_acc << std::endl;
       // std::cout << "cor_gyro: " << cor_gyro << std::endl;
@@ -141,7 +141,7 @@ namespace UAVFactor
 
       if (H1)
       {
-         Matrix33 Jac_perr_p = -_unrbi_matrix;
+         Matrix33 Jac_perr_p = - _unrbi_matrix;
          Matrix33 Jac_perr_r = J_pe_roti;
          Matrix33 Jac_rerr_r = J_dr * J_ri;
          Matrix33 Jac_verr_r = J_ve_rot1; // - A_mat * J_da_ri * dt_;
@@ -190,9 +190,9 @@ namespace UAVFactor
       {
          Matrix96 J_bias;
          J_bias.setZero();
-         J_bias.block(0, 0, 3, 6) = -0.5f * J_ba * dtt; // p_err w.r.t bias
-         J_bias.block(3, 0, 3, 6) = -J_bg * dt_;        // r_err w.r.t bias
-         J_bias.block(6, 0, 3, 6) = -J_ba * dt_;        // v_err w.r.t bias
+         J_bias.block(0, 0, 3, 6) = - 0.5f * J_acc_bias * dtt; // p_err w.r.t bias
+         J_bias.block(3, 0, 3, 6) = - J_gyro_bias * dt_;        // r_err w.r.t bias
+         J_bias.block(6, 0, 3, 6) = - J_acc_bias * dt_;        // v_err w.r.t bias
 
          *H3 = J_bias;
       }
