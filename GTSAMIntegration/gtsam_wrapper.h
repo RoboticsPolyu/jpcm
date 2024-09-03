@@ -31,12 +31,15 @@ namespace gtsam_wrapper
     typedef Eigen::Matrix<double, 12, 6>  Matrix126;
     typedef Eigen::Matrix<double, 12, 3>  Matrix123;
 
+    using gtsam_imuBi = gtsam::imuBias::ConstantBias;
+    using gtsam_fg    = gtsam::NonlinearFactorGraph;
+    using gtsam_sols  = gtsam::Values;
+    
     /** A convenient base class for creating your own NoiseModelFactor with 7
     * variables.  To derive from this class, implement evaluateError(). */
     template <class VALUE1, class VALUE2, class VALUE3, class VALUE4, class VALUE5, class VALUE6, class VALUE7>
     class NoiseModelFactor7 : public NoiseModelFactor
     {
-
     public:
         // typedefs for value types pulled from keys
         typedef VALUE1 X1;

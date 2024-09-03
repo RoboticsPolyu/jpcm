@@ -27,7 +27,7 @@ int main(int argc, char *argv[])
     param.config_from_ros_handle(nh);
 
     DFBControl controller(param);
-    // JCPM_TGyro controller(param);
+    // buildJPCMFG controller(param);
 
     PX4CtrlFSM fsm(param, controller);
 

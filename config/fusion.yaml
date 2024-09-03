@@ -157,11 +157,11 @@ Factor_graph:
 
     POS_MEAS_MEAN:  0.000
     POS_MEAS_COV:   0.500 # 0.05
-    VEL_MEAS_COV:   0.001
+    VEL_MEAS_COV:   0.050
     ROT_MEAS_COV:   0.001
     
-    PRIOR_POS_MEAS_COV:   0.001 # 0.05
-    PRIOR_VEL_MEAS_COV:   0.01
+    PRIOR_POS_MEAS_COV:   0.50 # 0.05
+    PRIOR_VEL_MEAS_COV:   0.05
     PRIOR_ROT_MEAS_COV:   0.01
 
     # IMU Params

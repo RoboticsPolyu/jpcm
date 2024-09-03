@@ -16,13 +16,14 @@ using symbol_shorthand::B;
 static std::random_device __randomDevice;
 static std::mt19937 __randomGen(__randomDevice());
 
-bool DFBControl::initializeState(const std::vector<Imu_Data_t> &imu_raw, const std::vector<Odom_Data_t> &GT, gtsam::Vector3 &init_vel, gtsam::Vector6 &init_bias)
+bool DFBControl::initializeState(const std::vector<Imu_Data_t> &imu_raw, const std::vector<Odom_Data_t> &fakeGPS, 
+                                 gtsam::Vector3 &init_vel, gtsam::Vector6 &init_bias)
 {
   double opt_cost = 0.0f;
   clock_t start, end;
 
-  gtsam::NonlinearFactorGraph graph_init;
-  gtsam::Values               initial_value;
+  gtsam_fg graph_init;
+  gtsam_sols initial_value;
 
   // IMU noise
   auto imu_factor_noise = noiseModel::Diagonal::Sigmas
@@ -48,24 +49,24 @@ bool DFBControl::initializeState(const std::vector<Imu_Data_t> &imu_raw, const s
 
   for(uint16_t idx = 0; idx < window_lens_; idx++)
   {
-    gtsam::Pose3 pose(gtsam::Rot3(GT[idx].q), GT[idx].p);
-    gtsam::Vector3 v = GT[idx].v;
+    gtsam::Pose3 pose  = gtsam::Pose3(gtsam::Rot3(fakeGPS[idx].q), fakeGPS[idx].p);
+    gtsam::Vector3 vel = fakeGPS[idx].v;
 
     if(idx != 0)
     {
-      float __dt = (GT[idx - state_idx_].rcv_stamp - GT[idx - 1].rcv_stamp).toSec();
+      float __dt = (fakeGPS[idx].rcv_stamp - fakeGPS[idx - 1].rcv_stamp).toSec();
       graph_init.add(IMUFactor(X(idx-1), V(idx-1), B(idx-1), X(idx), V(idx), __dt, imu_raw[idx].a, imu_raw[idx].w, imu_factor_noise));
       gtsam_imuBi zero_bias(gtsam::Vector3(0,0,0), gtsam::Vector3(0,0,0));
       graph_init.add(BetweenFactor<gtsam_imuBi>(B(idx-1), B(idx), zero_bias, bias_noise));
     }
 
     // graph_init.add(gtsam::GPSFactor(X(idx), odom_v[idx].p, noise_model_gps)); 
-    graph_init.add(gtsam::PriorFactor<gtsam::Pose3>(X(idx), pose, prior_vicon_noise)); 
-    // graph_init.add(gtsam::PriorFactor<gtsam::Vector3>(V(idx), v, prior_vel_noise)); 
+    graph_init.add(gtsam::PriorFactor<gtsam::Pose3>  (X(idx), pose, prior_vicon_noise)); 
+    // graph_init.add(gtsam::PriorFactor<gtsam::Vector3>(V(idx), vel,  prior_vel_noise)); 
 
     initial_value.insert(B(idx), gtsam_imuBi());
     initial_value.insert(X(idx), pose);
-    initial_value.insert(V(idx), v);
+    initial_value.insert(V(idx), vel);
   }
 
   gtsam::LevenbergMarquardtParams parameters;
@@ -128,7 +129,7 @@ quadrotor_msgs::Px4ctrlDebug DFBControl::fusion(const Odom_Data_t &odom, const I
     parameters.verbosityLM      = gtsam::LevenbergMarquardtParams::SILENT;
 
     std::cout << " -- <  Fusion Test > -- " << std::endl;
-    buildFactorGraph(graph_, initial_value_, odom_data_noise_, imu_data_v_, dt_);
+    FGbuilder->buildFusionFG(graph_, initial_value_, odom_data_noise_, imu_data_v_, dt_, state_idx_);
     LevenbergMarquardtOptimizer optimizer(graph_, initial_value_, parameters);
     start = clock();
     Values result = optimizer.optimize();
@@ -139,7 +140,7 @@ quadrotor_msgs::Px4ctrlDebug DFBControl::fusion(const Odom_Data_t &odom, const I
     opt_cost = (double)(end - start) / CLOCKS_PER_SEC;
     std::cout << " ---------- Optimize Time: [ " << opt_cost << " ] " << endl;
   
-    uint16_t idx =  window_lens_ + state_idx_ - 2 + IDX_START;
+    uint16_t idx =  window_lens_ + state_idx_ - 2 + IDX_P_START;
     gtsam::Pose3 pose;
     gtsam::Vector3 vel;
     gtsam_imuBi imu_bias;
@@ -194,116 +195,6 @@ quadrotor_msgs::Px4ctrlDebug DFBControl::fusion(const Odom_Data_t &odom, const I
   }
 
   return debug_msg_;
-
-}
-
-/* Fusion*/
-void DFBControl::buildFactorGraph(gtsam::NonlinearFactorGraph& _graph, gtsam::Values& _initial_value, 
-                        const std::vector<Odom_Data_t> &odom_v, 
-                        const std::vector<Imu_Data_t> &imu_v, double dt)
-{
-  // IMU noise
-  auto imu_factor_noise = noiseModel::Diagonal::Sigmas
-    ((Vector(9) << Vector3::Constant(param_.factor_graph.acc_sigma_x* dt * dt * 0.5f + param_.factor_graph.acc_sigma_x* dt * dt), 
-      Vector3::Constant(param_.factor_graph.gyro_sigma_x* dt), Vector3::Constant(param_.factor_graph.acc_sigma_x*dt)).finished());  
-  
-  // Bias noise
-  auto bias_noise = noiseModel::Diagonal::Sigmas(
-    (Vector(6) << Vector3(param_.factor_graph.acc_bias_imu_x, param_.factor_graph.acc_bias_imu_x, param_.factor_graph.acc_bias_imu_x), 
-    Vector3(param_.factor_graph.gyro_bias_sigma_x, param_.factor_graph.gyro_bias_sigma_x, param_.factor_graph.gyro_bias_sigma_x)).finished());
-  
-  // Prior noise
-  auto prior_bias_noise = noiseModel::Diagonal::Sigmas(
-    (Vector(6) << Vector3::Constant(param_.factor_graph.prior_acc_sigma), Vector3::Constant(param_.factor_graph.prior_gyro_sigma)).finished());
-  auto prior_vicon_noise = noiseModel::Diagonal::Sigmas(
-    (Vector(6) << Vector3::Constant(param_.factor_graph.PRIOR_ROT_MEAS_COV), Vector3::Constant(param_.factor_graph.PRIOR_POS_MEAS_COV)).finished());
-  auto prior_vel_noise   = noiseModel::Diagonal::Sigmas(
-    Vector3(param_.factor_graph.PRIOR_VEL_MEAS_COV, param_.factor_graph.PRIOR_VEL_MEAS_COV, param_.factor_graph.PRIOR_VEL_MEAS_COV));
-
-  // GPS noise
-  auto noise_model_gps = noiseModel::Isotropic::Sigma(3, param_.factor_graph.POS_MEAS_COV);
-  // gtsam::GPSFactor gps_factor(X(correction_count), Point3(gps(0), gps(1), gps(2)), noise_model_gps);
-  gtsam_imuBi prior_bias(init_bias_);
-  // gtsam_imuBi prior_bias(gtsam::Vector3(0.12, -0.7, 0), gtsam::Vector3(0, 0, -0.004));
-  if(state_idx_ == 0) 
-  {
-    for(uint16_t idx =  state_idx_; idx < window_lens_ + state_idx_; idx++)
-    {
-      gtsam::Rot3 rot  = gtsam::Rot3(odom_v[idx - state_idx_].q);
-      gtsam::Pose3 pose(rot, odom_v[idx - state_idx_].p);
-      gtsam::Vector3 v = odom_v[idx - state_idx_].v;
-
-      if(idx != state_idx_)
-      {
-        // float __dt = (odom_v[idx - state_idx_].rcv_stamp - odom_v[idx - state_idx_ - 1].rcv_stamp).toSec();
-        graph_positioning_.add(IMUFactor(X(idx-1+IDX_START), V(idx-1+IDX_START), B(idx-1+IDX_START), X(idx+IDX_START), V(idx+IDX_START), dt, 
-          imu_v[idx - state_idx_].a, imu_v[idx - state_idx_].w, imu_factor_noise));
-        _initial_value.insert(B(idx-1+IDX_START), prior_bias);
-        gtsam_imuBi zero_bias(gtsam::Vector3(0,0,0), gtsam::Vector3(0,0,0));
-        graph_positioning_.add(BetweenFactor<gtsam_imuBi>(B(idx-1+IDX_START), B(idx+IDX_START), zero_bias, bias_noise));
-      }
-      
-      if(idx == state_idx_)
-      {
-        graph_positioning_.add(gtsam::PriorFactor<gtsam_imuBi>   (B(idx+IDX_START), prior_bias, prior_bias_noise));
-        graph_positioning_.add(gtsam::PriorFactor<gtsam::Pose3>  (X(idx+IDX_START), pose,       prior_vicon_noise)); 
-        graph_positioning_.add(gtsam::PriorFactor<gtsam::Vector3>(V(idx+IDX_START), init_vel_,  prior_vel_noise)); 
-      }
-      else
-      {
-        // graph_positioning_.add(gtsam::GPSFactor(X(idx+IDX_START), odom_v[idx - state_idx_].p, noise_model_gps)); 
-        graph_positioning_.add(gtsam::PriorFactor<gtsam::Pose3>  (X(idx+IDX_START), pose, prior_vicon_noise)); 
-        // graph_positioning_.add(gtsam::PriorFactor<gtsam::Vector3>(V(idx+IDX_START), v, prior_vel_noise)); 
-      }
-
-      _initial_value.insert(X(idx+IDX_START), pose);
-      _initial_value.insert(V(idx+IDX_START), v);
-
-    }
-
-    _initial_value.insert(B(window_lens_-1+IDX_START), gtsam_imuBi());
-    _graph = graph_positioning_;
-
-    std::cout << "Build first factor graph" << std::endl;
-    _graph.print();
-
-  }
-  else
-  {
-    gtsam::FastVector<gtsam::Key> keysToMarginalize;
-    keysToMarginalize.push_back(X(state_idx_-1+IDX_START));
-    keysToMarginalize.push_back(V(state_idx_-1+IDX_START));
-    keysToMarginalize.push_back(B(state_idx_-1+IDX_START));
-    // keysToMarginalize.push_back(U(state_idx_));
-    boost::shared_ptr<gtsam::NonlinearFactorGraph> margGraph;
-    margGraph = marginalizeOut(graph_positioning_, _initial_value, keysToMarginalize, nullptr, true);
-
-    graph_positioning_ = *margGraph;
-    // add new measurements factor
-    uint16_t    idx =  window_lens_ + state_idx_ - 1 + IDX_START;
-    gtsam::Rot3 rot = gtsam::Rot3(odom_v[window_lens_-1].q);
-    gtsam::Pose3 pose(rot, odom_v[window_lens_-1].p);
-
-    // graph_positioning_.add(gtsam::PriorFactor<gtsam::Pose3>  (X(idx), pose, vicon_noise));
-    graph_positioning_.add(gtsam::GPSFactor(X(idx), odom_v[window_lens_-1].p, noise_model_gps)); 
-    float __dt = (odom_v[window_lens_-1].rcv_stamp - odom_v[window_lens_-2].rcv_stamp).toSec();
-    std::cout << "__dt is : " << __dt << std::endl;
-    // graph_positioning_.add(gtsam::PriorFactor<gtsam::Vector3>(V(idx), odom_v[window_lens_-1].v, vel_noise)); 
-    graph_positioning_.add(IMUFactor(X(idx-1), V(idx-1), B(idx-1), X(idx), V(idx), __dt, imu_v[window_lens_-1].a, imu_v[window_lens_-1].w, imu_factor_noise));
-    gtsam_imuBi zero_bias(gtsam::Vector3(0,0,0), gtsam::Vector3(0,0,0));
-    graph_positioning_.add(BetweenFactor<gtsam_imuBi>(B(idx-1), B(idx), zero_bias, bias_noise));
-    _initial_value.insert(B(idx), gtsam_imuBi());
-
-    _initial_value.insert(X(idx), pose);
-    _initial_value.insert(V(idx), odom_v[window_lens_-1].v);
-
-    _graph = graph_positioning_;
-  
-    std::cout << "Updated graph" << std::endl;
-    _graph.print();
-
-  }
-  state_idx_++;
 
 }
 
@@ -365,7 +256,7 @@ quadrotor_msgs::Px4ctrlDebug DFBControl::calculateControl(const Desired_State_t 
     // graph_.empty();
 
     std::cout << " - JMPC - " << std::endl;
-    buildFactorGraph(graph_, initial_value_, des_data_v_, odom_data_noise_, imu_data_v_, dt_);
+    FGbuilder->buildFactorGraph(graph_, initial_value_, des_data_v_, odom_data_noise_, imu_data_v_, dt_, state_idx_);
     LevenbergMarquardtOptimizer optimizer(graph_, initial_value_, parameters);
     start = clock();
     Values result = optimizer.optimize();
@@ -385,7 +276,7 @@ quadrotor_msgs::Px4ctrlDebug DFBControl::calculateControl(const Desired_State_t 
     thr_bodyrate_u.thrust    = thrust2;
     thr_bodyrate_u.bodyrates = bodyrates2;
 
-    uint16_t    idx =  window_lens_ + state_idx_ - 2 + IDX_START;
+    uint16_t    idx =  window_lens_ + state_idx_ - 2 + IDX_P_START;
     gtsam::Pose3   pose;
     gtsam::Vector3 vel;
 
@@ -449,7 +340,9 @@ quadrotor_msgs::Px4ctrlDebug DFBControl::calculateControl(const Desired_State_t 
 
 }
 
-/* Single-positioning JPCM */
+/* 
+ * Single-positioning JPCM 
+ */
 quadrotor_msgs::Px4ctrlDebug DFBControl::calculateControl(const Desired_State_t &des, const Odom_Data_t &odom, const Imu_Data_t &imu, 
   Controller_Output_t &thr_bodyrate_u, CTRL_MODE mode_switch)
 {
@@ -484,7 +377,7 @@ quadrotor_msgs::Px4ctrlDebug DFBControl::calculateControl(const Desired_State_t 
     graph_.empty();
 
     // std::cout << " --------------------- MPC -------------------- " << std::endl;
-    buildFactorGraph(graph_, initial_value_, des_data_v_, odom_noise, dt_);
+    FGbuilder->buildFactorGraph(graph_, initial_value_, des_data_v_, odom_noise, dt_);
     LevenbergMarquardtOptimizer optimizer(graph_, initial_value_, parameters);
     start = clock();
     Values result = optimizer.optimize();
@@ -560,349 +453,6 @@ quadrotor_msgs::Px4ctrlDebug DFBControl::calculateControl(const Desired_State_t 
   return debug_msg_;
 }
 
-// Build Factor Graph
-
-/* JCPM*/
-void DFBControl::buildFactorGraph(gtsam::NonlinearFactorGraph& _graph, gtsam::Values& _initial_value, 
-                        const std::vector<Desired_State_t> &des_v, const std::vector<Odom_Data_t> &odom_v, 
-                        const std::vector<Imu_Data_t> &imu_v, double dt)
-{
-  auto input_jerk  = noiseModel::Diagonal::Sigmas(Vector4(param_.factor_graph.INPUT_JERK_T, 
-      param_.factor_graph.INPUT_JERK_M, param_.factor_graph.INPUT_JERK_M, param_.factor_graph.INPUT_JERK_M3));
-
-  auto dynamics_noise = noiseModel::Diagonal::Sigmas((Vector(9) << Vector3::Constant(param_.factor_graph.DYNAMIC_P_COV), 
-      Vector3::Constant(param_.factor_graph.DYNAMIC_R_COV), Vector3::Constant(param_.factor_graph.DYNAMIC_V_COV)).finished());
-  
-  auto imu_factor_noise = noiseModel::Diagonal::Sigmas
-    ((Vector(9) << Vector3::Constant(param_.factor_graph.acc_sigma_x* dt * dt * 0.5f + param_.factor_graph.acc_sigma_x* dt * dt), 
-      Vector3::Constant(param_.factor_graph.acc_sigma_x* dt), Vector3::Constant(param_.factor_graph.gyro_sigma_x*dt)).finished());  
-  
-  // Initial state noise
-  auto bias_noise = noiseModel::Diagonal::Sigmas(
-    (Vector(6) << Vector3::Constant(param_.factor_graph.acc_bias_imu_x), Vector3::Constant(param_.factor_graph.gyro_bias_sigma_x)).finished());
-  
-  auto prior_bias_noise = noiseModel::Diagonal::Sigmas(
-    (Vector(6) << Vector3::Constant(param_.factor_graph.prior_acc_sigma), Vector3::Constant(param_.factor_graph.prior_gyro_sigma)).finished());
-  
-  auto vicon_noise = noiseModel::Diagonal::Sigmas(
-    (Vector(6) << Vector3::Constant(param_.factor_graph.ROT_MEAS_COV), Vector3::Constant(param_.factor_graph.PRI_VICON_POS_COV)).finished());
-  
-  auto vel_noise   = noiseModel::Diagonal::Sigmas(
-    Vector3(param_.factor_graph.PRI_VICON_VEL_COV, param_.factor_graph.PRI_VICON_VEL_COV, param_.factor_graph.PRI_VICON_VEL_COV));
-  
-  auto prior_vicon_noise = noiseModel::Diagonal::Sigmas(
-    (Vector(6) << Vector3::Constant(param_.factor_graph.PRIOR_ROT_MEAS_COV), Vector3::Constant(param_.factor_graph.PRIOR_POS_MEAS_COV)).finished());
-  
-  auto prior_vel_noise   = noiseModel::Diagonal::Sigmas(
-    Vector3(param_.factor_graph.PRIOR_VEL_MEAS_COV, param_.factor_graph.PRIOR_VEL_MEAS_COV, param_.factor_graph.PRIOR_VEL_MEAS_COV));
-  
-  auto ref_predict_vel_noise = noiseModel::Diagonal::Sigmas(
-    Vector3(param_.factor_graph.CONTROL_V_COV, param_.factor_graph.CONTROL_V_COV, param_.factor_graph.CONTROL_V_COV));
-  
-  // Configure noise models
-  // Replace pose noise of gtsam::Pose3(gtsam::Rot3(), gps_position);
-
-  auto noise_model_gps = noiseModel::Isotropic::Sigma(3, param_.factor_graph.POS_MEAS_COV);
-  // gtsam::GPSFactor gps_factor(X(correction_count), Point3(gps(0), gps(1), gps(2)), noise_model_gps);
-
-  auto clf_sigma = noiseModel::Diagonal::Sigmas(Vector4(1.0, 1.0, 1.0, 1.0));
-
-  gtsam::Vector3 drag_k(-param_.rt_drag.x, -param_.rt_drag.y, -param_.rt_drag.z);
-  
-  if(state_idx_ == 0) 
-  {
-    uint16_t latest_state_idx = state_idx_ + window_lens_ + IDX_START - 1;
-    for(uint16_t idx =  state_idx_; idx < window_lens_ + state_idx_; idx++)
-    {
-      gtsam::Rot3 rot  = gtsam::Rot3(odom_data_v_[idx - state_idx_].q);
-      gtsam::Pose3 pose(rot, odom_data_v_[idx - state_idx_].p);
-      gtsam::Vector3 v = odom_data_v_[idx - state_idx_].v;
-
-      if(idx != state_idx_)
-      {
-        graph_positioning_.add(IMUFactor(X(idx-1+IDX_START), V(idx-1+IDX_START), B(idx-1+IDX_START), X(idx+IDX_START), V(idx+IDX_START), dt, imu_v[idx - state_idx_].a, imu_v[idx - state_idx_].w, imu_factor_noise));
-        _initial_value.insert(B(idx-1+IDX_START), gtsam_imuBi());
-        graph_positioning_.add(BetweenFactor<gtsam_imuBi>(B(idx-1+IDX_START), B(idx+IDX_START), imuBias::ConstantBias(), bias_noise));
-      }
-
-      // graph_positioning_.add(gtsam::PriorFactor<gtsam::Pose3>  (X(idx+IDX_START), pose, vicon_noise)); 
-      // graph_positioning_.add(gtsam::GPSFactor(X(idx+IDX_START), odom_data_v_[idx - state_idx_].p, noise_model_gps)); 
-      // graph_positioning_.add(gtsam::PriorFactor<gtsam::Vector3>(V(idx+IDX_START), odom_data_v_[idx - state_idx_].v, vel_noise)); 
-      
-      if(idx == state_idx_)
-      {
-        graph_positioning_.add(gtsam::PriorFactor<gtsam_imuBi>(B(idx+IDX_START), gtsam_imuBi(), prior_bias_noise));
-        graph_positioning_.add(gtsam::PriorFactor<gtsam::Pose3>  (X(idx+IDX_START), pose, prior_vicon_noise)); 
-        graph_positioning_.add(gtsam::PriorFactor<gtsam::Vector3>(V(idx+IDX_START), odom_data_v_[idx - state_idx_].v, prior_vel_noise)); 
-      }
-      else
-      {
-        graph_positioning_.add(gtsam::GPSFactor(X(idx+IDX_START), odom_data_v_[idx - state_idx_].p, noise_model_gps)); 
-      }
-
-      _initial_value.insert(X(idx+IDX_START), pose);
-      _initial_value.insert(V(idx+IDX_START), v);
-
-    }
-
-    _initial_value.insert(B(window_lens_-1+IDX_START), gtsam_imuBi());
-    _graph = graph_positioning_;
-
-    // std::cout << "graph_positioning_" << std::endl;
-    // graph_positioning_.print();
-
-    uint16_t begin_u = 0;
-    uint16_t end_u   = opt_traj_lens_;
-
-    for (uint16_t idx = begin_u; idx < end_u; idx++)
-    {
-      if(idx == begin_u)
-      {
-        DynamicsFactorTGyro dynamics_factor(X(latest_state_idx), V(latest_state_idx), U(idx), X(idx + 1), V(idx + 1), dt, param_.mass, drag_k, dynamics_noise);
-        _graph.add(dynamics_factor); 
-      }
-      else
-      {
-        DynamicsFactorTGyro dynamics_factor(X(idx), V(idx), U(idx), X(idx + 1), V(idx + 1), dt, param_.mass, drag_k, dynamics_noise);
-        _graph.add(dynamics_factor); 
-      }
-      
-      gtsam::Pose3   pose_idx(gtsam::Rot3(des_v[idx].q), des_v[idx].p);
-      gtsam::Vector3 vel_idx   = des_v[idx].v;
-      // gtsam::Vector3 omega_idx = des_v[idx].w;
-      
-      // std::cout << "Idx: " << idx << ", ref vel: " << vel_idx.transpose() << std::endl;
-      // std::cout << "ref pos: " << des_v[idx].p.transpose() << std::endl;
-
-      _initial_value.insert(X(idx + 1), pose_idx);
-      _initial_value.insert(V(idx + 1), vel_idx);
-
-      if(idx != begin_u)
-      {
-        BetForceMoments bet_FM_factor(U(idx - 1), U(idx), input_jerk);
-        _graph.add(bet_FM_factor); 
-      }
-      
-      gtsam::Vector4 init_input(10, 0, 0, 0);
-      _initial_value.insert(U(idx), init_input);
-
-      gtsam::Vector3 control_r_cov(param_.factor_graph.CONTROL_R1_COV, param_.factor_graph.CONTROL_R2_COV, param_.factor_graph.CONTROL_R3_COV);
-      if(idx == end_u - 1)
-      {   
-        gtsam::Vector3 final_position_ref(
-          param_.factor_graph.CONTROL_PF_COV_X, param_.factor_graph.CONTROL_PF_COV_Y, param_.factor_graph.CONTROL_PF_COV_Z);
-        auto ref_predict_pose_noise = noiseModel::Diagonal::Sigmas((Vector(6) << control_r_cov, final_position_ref).finished()); 
-        _graph.add(gtsam::PriorFactor<gtsam::Pose3>(X(idx + 1), pose_idx, ref_predict_pose_noise)); 
-        _graph.add(gtsam::PriorFactor<gtsam::Vector3>(V(idx + 1), vel_idx, ref_predict_vel_noise)); 
-      }
-      else
-      {
-        gtsam::Vector3 _position_ref(
-          param_.factor_graph.CONTROL_P_COV_X, param_.factor_graph.CONTROL_P_COV_Y, param_.factor_graph.CONTROL_P_COV_Z);
-        auto ref_predict_pose_noise = noiseModel::Diagonal::Sigmas((Vector(6) << control_r_cov, _position_ref).finished());
-        _graph.add(gtsam::PriorFactor<gtsam::Pose3>(X(idx + 1), pose_idx, ref_predict_pose_noise)); 
-        _graph.add(gtsam::PriorFactor<gtsam::Vector3>(V(idx + 1), vel_idx, ref_predict_vel_noise)); 
-      }
-    }
-
-    ControlLimitTGyroFactor cntrolLimitTGyroFactor(U(0), clf_sigma, param_.factor_graph.low, param_.factor_graph.high,
-    param_.factor_graph.glow, param_.factor_graph.ghigh, param_.factor_graph.thr, param_.factor_graph.gthr, param_.factor_graph.alpha);
-    _graph.add(cntrolLimitTGyroFactor); 
-
-    // std::cout << "Build first factor graph" << std::endl;
-    // _graph.print();
-
-  }
-  else
-  {
-    gtsam::FastVector<gtsam::Key> keysToMarginalize;
-    keysToMarginalize.push_back(X(state_idx_-1+IDX_START));
-    keysToMarginalize.push_back(V(state_idx_-1+IDX_START));
-    keysToMarginalize.push_back(B(state_idx_-1+IDX_START));
-    // keysToMarginalize.push_back(U(state_idx_));
-    boost::shared_ptr<gtsam::NonlinearFactorGraph> margGraph;
-    margGraph = marginalizeOut(graph_positioning_, _initial_value, keysToMarginalize, nullptr, true);
-
-    graph_positioning_ = *margGraph;
-    // add new measurements factor
-    uint16_t    idx =  window_lens_ + state_idx_ - 1 + IDX_START;
-    gtsam::Rot3 rot = gtsam::Rot3(odom_data_v_[window_lens_-1].q);
-    gtsam::Pose3 pose(rot, odom_data_v_[window_lens_-1].p);
-
-    // graph_positioning_.add(gtsam::PriorFactor<gtsam::Pose3>  (X(idx), pose, vicon_noise));
-    graph_positioning_.add(gtsam::GPSFactor(X(idx), odom_data_v_[window_lens_-1].p, noise_model_gps)); 
-    // graph_positioning_.add(gtsam::PriorFactor<gtsam::Vector3>(V(idx), odom_data_v_[window_lens_-1].v, vel_noise)); 
-    graph_positioning_.add(IMUFactor(X(idx-1), V(idx-1), B(idx-1), X(idx), V(idx), dt, imu_v[window_lens_-1].a, imu_v[window_lens_-1].w, imu_factor_noise));
-    graph_positioning_.add(BetweenFactor<gtsam_imuBi>(B(idx-1), B(idx), imuBias::ConstantBias(), bias_noise));
-    _initial_value.insert(B(idx), gtsam_imuBi());
-
-    // std::cout << "MarginalizeOut factor graph" << std::endl;
-    // graph_positioning_.print();
-
-    _initial_value.insert(X(idx), pose);
-    _initial_value.insert(V(idx), odom_data_v_[window_lens_-1].v);
-
-    _graph = graph_positioning_;
-
-    uint16_t begin_u = 0;
-    uint16_t end_u   = opt_traj_lens_;
-
-    uint16_t latest_state_idx = state_idx_ + window_lens_ + IDX_START - 1;
-    
-    for (uint16_t idx = begin_u; idx < end_u; idx++)
-    {
-      if(idx == begin_u)
-      {
-        DynamicsFactorTGyro dynamics_factor(
-          X(latest_state_idx), V(latest_state_idx), U(idx), X(idx + 1), V(idx + 1), dt, param_.mass, drag_k, dynamics_noise);
-        _graph.add(dynamics_factor); 
-      }
-      else
-      {
-        DynamicsFactorTGyro dynamics_factor(X(idx), V(idx), U(idx), X(idx + 1), V(idx + 1), dt, param_.mass, drag_k, dynamics_noise);
-        _graph.add(dynamics_factor); 
-      }
-      
-      gtsam::Pose3   pose_idx(gtsam::Rot3(des_v[idx].q), des_v[idx].p);
-      gtsam::Vector3 vel_idx   = des_v[idx].v;
-      // gtsam::Vector3 omega_idx = des_v[idx].w;
-      
-      // std::cout << "Idx: " << idx << ", ref vel: " << vel_idx.transpose() << std::endl;
-      // std::cout << "ref pos: " << des_v[idx].p.transpose() << std::endl;
-
-      _initial_value.update(X(idx + 1), pose_idx);
-      _initial_value.update(V(idx + 1), vel_idx);
-
-      if(idx != begin_u)
-      {
-        BetForceMoments bet_FM_factor(U(idx - 1), U(idx), input_jerk);
-        _graph.add(bet_FM_factor); 
-      }
-      
-      gtsam::Vector4 init_input(10, 0, 0, 0);
-      _initial_value.update(U(idx), init_input);
-
-      gtsam::Vector3 control_r_cov(param_.factor_graph.CONTROL_R1_COV, param_.factor_graph.CONTROL_R2_COV, param_.factor_graph.CONTROL_R3_COV);
-      if(idx == end_u - 1)
-      {   
-        gtsam::Vector3 final_position_ref(param_.factor_graph.CONTROL_PF_COV_X, param_.factor_graph.CONTROL_PF_COV_Y, param_.factor_graph.CONTROL_PF_COV_Z);
-        auto ref_predict_pose_noise = noiseModel::Diagonal::Sigmas((Vector(6) << control_r_cov, final_position_ref).finished()); 
-        _graph.add(gtsam::PriorFactor<gtsam::Pose3>(X(idx + 1), pose_idx, ref_predict_pose_noise)); 
-        _graph.add(gtsam::PriorFactor<gtsam::Vector3>(V(idx + 1), vel_idx, ref_predict_vel_noise)); 
-      }
-      else
-      {
-        gtsam::Vector3 _position_ref(param_.factor_graph.CONTROL_P_COV_X, param_.factor_graph.CONTROL_P_COV_Y, param_.factor_graph.CONTROL_P_COV_Z);
-        auto ref_predict_pose_noise = noiseModel::Diagonal::Sigmas((Vector(6) << control_r_cov, _position_ref).finished());
-        _graph.add(gtsam::PriorFactor<gtsam::Pose3>(X(idx + 1), pose_idx, ref_predict_pose_noise)); 
-        _graph.add(gtsam::PriorFactor<gtsam::Vector3>(V(idx + 1), vel_idx, ref_predict_vel_noise)); 
-      }
-    }
-
-    ControlLimitTGyroFactor cntrolLimitTGyroFactor(U(0), clf_sigma, param_.factor_graph.low, param_.factor_graph.high,
-    param_.factor_graph.glow, param_.factor_graph.ghigh, param_.factor_graph.thr, param_.factor_graph.gthr, param_.factor_graph.alpha);
-    _graph.add(cntrolLimitTGyroFactor); 
-  
-    // std::cout << "Updated graph" << std::endl;
-    // _graph.print();
-  }
-
-  state_idx_++;
-
-}
-
-/* Single-positioning JPCM*/
-void DFBControl::buildFactorGraph(gtsam::NonlinearFactorGraph& _graph, gtsam::Values& _initial_value, 
-  const std::vector<Desired_State_t> &des_v, const Odom_Data_t &odom, double dt)
-{
-  auto input_jerk  = noiseModel::Diagonal::Sigmas(Vector4(param_.factor_graph.INPUT_JERK_T, 
-      param_.factor_graph.INPUT_JERK_M, param_.factor_graph.INPUT_JERK_M, param_.factor_graph.INPUT_JERK_M3));
-
-  auto dynamics_noise = noiseModel::Diagonal::Sigmas((Vector(9) << Vector3::Constant(param_.factor_graph.DYNAMIC_P_COV), 
-      Vector3::Constant(param_.factor_graph.DYNAMIC_R_COV), Vector3::Constant(param_.factor_graph.DYNAMIC_V_COV)).finished());
-  
-  // Initial state noise
-  auto vicon_noise = noiseModel::Diagonal::Sigmas((Vector(6) << Vector3::Constant(param_.factor_graph.ROT_MEAS_COV), Vector3::Constant(param_.factor_graph.PRI_VICON_POS_COV)).finished());
-  auto vel_noise   = noiseModel::Diagonal::Sigmas(Vector3(param_.factor_graph.PRI_VICON_VEL_COV, param_.factor_graph.PRI_VICON_VEL_COV, param_.factor_graph.PRI_VICON_VEL_COV));
-
-  auto ref_predict_vel_noise = noiseModel::Diagonal::Sigmas(Vector3(param_.factor_graph.CONTROL_V_COV, param_.factor_graph.CONTROL_V_COV, param_.factor_graph.CONTROL_V_COV));
-  // auto ref_predict_omega_noise = noiseModel::Diagonal::Sigmas(Vector3(param_.factor_graph.CONTROL_O_COV, param_.factor_graph.CONTROL_O_COV, param_.factor_graph.CONTROL_O_COV));
-  gtsam::NonlinearFactorGraph  graph;
-  gtsam::Values                initial_value;
-
-  graph.empty();
-  initial_value.empty();
-
-  auto clf_sigma = noiseModel::Diagonal::Sigmas(Vector4(1.0, 1.0, 1.0, 1.0));
-  ControlLimitTGyroFactor cntrolLimitTGyroFactor(U(0), clf_sigma, param_.factor_graph.low, param_.factor_graph.high,
-      param_.factor_graph.glow, param_.factor_graph.ghigh, param_.factor_graph.thr, param_.factor_graph.gthr, param_.factor_graph.alpha);
-  graph.add(cntrolLimitTGyroFactor);
-
-  gtsam::Vector3 drag_k(-param_.rt_drag.x, -param_.rt_drag.y, -param_.rt_drag.z);
-
-  for (uint16_t idx = 0; idx < param_.factor_graph.OPT_LENS_TRAJ; idx++)
-  {
-    DynamicsFactorTGyro dynamics_factor(X(idx), V(idx), U(idx), X(idx + 1), V(idx + 1), dt, param_.mass, drag_k, dynamics_noise);
-    graph.add(dynamics_factor);
-    
-    gtsam::Pose3   pose_idx(gtsam::Rot3(des_v[idx].q), des_v[idx].p);
-    gtsam::Vector3 vel_idx   = des_v[idx].v;
-    // gtsam::Vector3 omega_idx = des_v[idx].w;
-    
-    // std::cout << "Idx: " << idx << ", ref vel: " << vel_idx.transpose() << std::endl;
-    // std::cout << "ref pos: " << des_v[idx].p.transpose() << std::endl;
-
-    initial_value.insert(X(idx + 1), pose_idx);
-    initial_value.insert(V(idx + 1), vel_idx);
-
-    if(idx != 0)
-    {
-      BetForceMoments bet_FM_factor(U(idx - 1), U(idx), input_jerk);
-      graph.add(bet_FM_factor);
-    }
-    
-    gtsam::Vector4 init_input(10, 0, 0, 0);
-    initial_value.insert(U(idx), init_input);
-
-    gtsam::Vector3 control_r_cov(param_.factor_graph.CONTROL_R1_COV, param_.factor_graph.CONTROL_R2_COV, param_.factor_graph.CONTROL_R3_COV);
-    if(idx == param_.factor_graph.OPT_LENS_TRAJ - 1)
-    {   
-      gtsam::Vector3 final_position_ref(param_.factor_graph.CONTROL_PF_COV_X, param_.factor_graph.CONTROL_PF_COV_Y, param_.factor_graph.CONTROL_PF_COV_Z);
-      auto ref_predict_pose_noise = noiseModel::Diagonal::Sigmas((Vector(6) << control_r_cov, final_position_ref).finished()); 
-      graph.add(gtsam::PriorFactor<gtsam::Pose3>(X(idx + 1), pose_idx, ref_predict_pose_noise));
-      graph.add(gtsam::PriorFactor<gtsam::Vector3>(V(idx + 1), vel_idx, ref_predict_vel_noise));
-    }
-    else
-    {
-      gtsam::Vector3 _position_ref(param_.factor_graph.CONTROL_P_COV_X, param_.factor_graph.CONTROL_P_COV_Y, param_.factor_graph.CONTROL_P_COV_Z);
-      auto ref_predict_pose_noise = noiseModel::Diagonal::Sigmas((Vector(6) << control_r_cov, _position_ref).finished());
-      graph.add(gtsam::PriorFactor<gtsam::Pose3>(X(idx + 1), pose_idx, ref_predict_pose_noise));
-      graph.add(gtsam::PriorFactor<gtsam::Vector3>(V(idx + 1), vel_idx, ref_predict_vel_noise));
-    }
-
-    if (idx == 0)
-    {              
-      gtsam::Rot3 rot = gtsam::Rot3(odom.q);
-      gtsam::Pose3 pose(rot, odom.p);
-
-      // std::cout << "Odom: " << idx << ", vel: " << vel_add.transpose() << std::endl;
-      // std::cout << "pos: " << pos_add.transpose() << std::endl;
-      
-      graph.add(gtsam::PriorFactor<gtsam::Pose3>  (X(idx), pose, vicon_noise));
-      graph.add(gtsam::PriorFactor<gtsam::Vector3>(V(idx), odom.v, vel_noise));
-      
-      initial_value.insert(X(idx), pose);
-      initial_value.insert(V(idx), odom.v);
-
-      // float distance = (des_v[0].p - odom.p).norm();
-      // std::cout << "distance: [ " << distance << " ]" << endl;
-    }
-  }
-
-  _graph = graph;
-  _initial_value = initial_value;
-}
-
 double DFBControl::fromQuaternion2yaw(Eigen::Quaterniond q)
 {
   double yaw = atan2(2 * (q.x()*q.y() + q.w()*q.z()), q.w()*q.w() + q.x()*q.x() - q.y()*q.y() - q.z()*q.z());
@@ -914,6 +464,7 @@ DFBControl::DFBControl(Parameter_t &param) : param_(param)
   resetThrustMapping();
   time_t now = time(NULL);
   tm* t = localtime(&now);
+  FGbuilder = std::make_shared<buildJPCMFG>(param);
 
   graph_.empty(); 
   dt_ = 0.01f; 

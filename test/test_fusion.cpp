@@ -25,16 +25,9 @@ int main(int argc, char *argv[])
 
     Parameter_t param;
     param.config_from_ros_handle(nh);
-    // std::ofstream log_;
-    // time_t now = time(NULL);
-    // tm* t = localtime(&now);
-    // stringstream ss; ss << "/home/amov/output/controller_log_";
-    // ss << t->tm_year + 1900 << "." << t->tm_mon + 1 << "." << t->tm_mday << "." << t->tm_hour << "." << t->tm_min << "." << t->tm_sec << ".txt";
-    // std::cout << " -- log file:" << ss.str() << std::endl;
-    // log_.open(ss.str(), std::ios::out);
 
     DFBControl controller(param);
-    // JCPM_TGyro controller(param);
+    // buildJPCMFG controller(param);
 
     Odom_Data_t odom_data, odom_data_noise;
     Imu_Data_t  imu;

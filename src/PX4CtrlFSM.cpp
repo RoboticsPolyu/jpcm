@@ -34,26 +34,26 @@ PX4CtrlFSM::PX4CtrlFSM(Parameter_t &param_, DFBControl &controller_) : param(par
 	-------- CMD_CTRL
 
 */
-DFBControl::CTRL_MODE PX4CtrlFSM::cvt_ctrl_mode(uint8_t ctrl_mode)
+CTRL_MODE PX4CtrlFSM::cvt_ctrl_mode(uint8_t ctrl_mode)
 {
-	DFBControl::CTRL_MODE _ctrl_mode;
+	CTRL_MODE _ctrl_mode;
 
 	if(ctrl_mode == 1)
 	{
-		_ctrl_mode = DFBControl::CTRL_MODE::DFBC;
+		_ctrl_mode = CTRL_MODE::DFBC;
 	}
 	else if(ctrl_mode == 2)
 	{
-		_ctrl_mode = DFBControl::CTRL_MODE::MPC;
+		_ctrl_mode = CTRL_MODE::MPC;
 	}
 	else if(ctrl_mode == 3)
 	{
-		_ctrl_mode = DFBControl::CTRL_MODE::JPCM;
+		_ctrl_mode = CTRL_MODE::JPCM;
 	}
 	else
 	{
 		std::cout << "Ctrl mode is wrong ! " << std::endl;
-		_ctrl_mode = DFBControl::CTRL_MODE::DFBC;
+		_ctrl_mode = CTRL_MODE::DFBC;
 	}
 
 	return _ctrl_mode;
@@ -65,7 +65,7 @@ void PX4CtrlFSM::process()
 	Controller_Output_t thr_bodyrate_u;
 	Desired_State_t des(odom_data);
 	bool rotor_low_speed_during_land = false;
-	DFBControl::CTRL_MODE ctrl_mode;
+	CTRL_MODE ctrl_mode;
 	ctrl_mode = cvt_ctrl_mode(param.ctrl_mode);
 
 	// STEP1: state machine runs
@@ -345,11 +345,11 @@ void PX4CtrlFSM::process()
 	{
 		// gtsam::Rot3 rot = gtsam::Rot3::identity();
   		// des.q = rot.toQuaternion();
-		if(ctrl_mode == DFBControl::CTRL_MODE::JPCM)
+		if(ctrl_mode == CTRL_MODE::JPCM)
 		{
 			controller.calculateControl(des, odom_data, imu_data, imu_raw_data, thr_bodyrate_u, ctrl_mode);
 		}
-		else if(ctrl_mode == DFBControl::CTRL_MODE::MPC)
+		else if(ctrl_mode == CTRL_MODE::MPC)
 		{
 			debug_msg = controller.calculateControl(des, odom_data, imu_data, thr_bodyrate_u, ctrl_mode);
 		}

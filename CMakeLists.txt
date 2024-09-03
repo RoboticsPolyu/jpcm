@@ -31,14 +31,13 @@ include_directories(
   ${GTSAM_INCLUDE_DIR}
   include/${PROJECT_NAME}
   include
+  GTSAMIntegration
   ${YAML_CPP_INCLUDE_DIRS}
 )
 
-include_directories("/home/amov/Fast250/devel/include")
-
 add_executable(gps_imu        
   src/gps_imu.cpp
-  src/gps_imu_node.cpp
+  app/gps_imu_node.cpp
   src/PX4CtrlParam.cpp
   src/input.cpp
 )
@@ -53,7 +52,7 @@ target_link_libraries(gps_imu
 )
 
 add_executable(odom_node        
-  src/odom_node.cpp
+  app/odom_node.cpp
   src/PX4CtrlParam.cpp
 )
 
@@ -67,15 +66,15 @@ target_link_libraries(odom_node
 )
 
 add_executable(px4ctrl_node 
-  src/px4ctrl_node.cpp
+  app/px4ctrl_node.cpp
+  src/controller.cpp
+  src/input.cpp  
   src/PX4CtrlFSM.cpp
   src/PX4CtrlParam.cpp
-  src/controller.cpp
-  src/factors.cpp
-  src/input.cpp
-  src/JPCM.cpp
-  src/Marginalization.cpp
-  src/GTSAMUtils.cpp
+  GTSAMIntegration/factors.cpp
+  GTSAMIntegration/GTSAMUtils.cpp
+  GTSAMIntegration/JPCM.cpp
+  GTSAMIntegration/Marginalization.cpp
 )
 
 add_dependencies(px4ctrl_node quadrotor_msgs)
@@ -92,14 +91,14 @@ catkin_install_python(PROGRAMS thrust_calibrate_scrips/thrust_calibrate.py
 )
 
 add_executable(test_jpcm        
-  test/test_jpcm.cpp
+  GTSAMIntegration/factors.cpp
+  GTSAMIntegration/GTSAMUtils.cpp
+  GTSAMIntegration/JPCM.cpp
+  GTSAMIntegration/Marginalization.cpp
   src/controller.cpp
-  src/factors.cpp
   src/PX4CtrlParam.cpp
   src/input.cpp
-  src/JPCM.cpp
-  src/Marginalization.cpp
-  src/GTSAMUtils.cpp
+  test/test_jpcm.cpp
 )
 
 add_dependencies(test_jpcm quadrotor_msgs geometry_msgs)
@@ -111,14 +110,15 @@ target_link_libraries(test_jpcm
   ${YAML_CPP_LIBRARIES}
 )
 
-add_executable(test_fusion      
+add_executable(test_fusion  
+  GTSAMIntegration/factors.cpp
+  GTSAMIntegration/GTSAMUtils.cpp
+  GTSAMIntegration/JPCM.cpp
+  GTSAMIntegration/Marginalization.cpp    
   test/test_fusion.cpp
   src/controller.cpp
-  src/factors.cpp
   src/PX4CtrlParam.cpp
   src/input.cpp
-  src/Marginalization.cpp
-  src/GTSAMUtils.cpp
 )
 
 add_dependencies(test_fusion quadrotor_msgs geometry_msgs)

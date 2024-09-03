@@ -41,14 +41,14 @@ public:
 	Imu_Data_t           imu_data;
 	Imu_Data_t           imu_raw_data;
 	Acc_Data_t           acc_data; // linear acc
-	float                 hover_thrust;
+	float                hover_thrust;
 	
 	Command_Data_t cmd_data;
 	Battery_Data_t bat_data;
 	Takeoff_Land_Data_t takeoff_land_data;
 
 	DFBControl &controller;
-	// JCPM_TGyro &controller;
+	// buildJPCMFG &controller;
 
 	ros::Publisher traj_start_trig_pub;
 	ros::Publisher ctrl_FCU_pub;
@@ -110,7 +110,7 @@ private:
 	void publish_attitude_ctrl(const Controller_Output_t &thr_bodyrate_u, const ros::Time &stamp);
 	void publish_trigger(const nav_msgs::Odometry &odom_msg);
 
-	DFBControl::CTRL_MODE cvt_ctrl_mode(uint8_t ctrl_mode);
+	CTRL_MODE cvt_ctrl_mode(uint8_t ctrl_mode);
 };
 
 #endif

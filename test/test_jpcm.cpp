@@ -13,7 +13,7 @@ int main(int argc, char *argv[])
   Odom_Data_t     odom;
   Imu_Data_t      imu;
   Imu_Data_t      imu_raw;
-  imu_raw.a = Eigen::Vector3d(0, 0, -9.81);
+  imu_raw.a = Eigen::Vector3d(0, 0, 9.81);
   imu_raw.w = Eigen::Vector3d(0, 0, 0);
 
   float v  = 0.5;
@@ -24,7 +24,7 @@ int main(int argc, char *argv[])
     // int test_idx = 60;
     // odom.p = Eigen::Vector3d(0.005*(test_idx - 50), 0.005*(test_idx - 50), 0.00);
     odom.p = Eigen::Vector3d(0.0, 0.0, 0.0);
-    odom.v = Eigen::Vector3d(0,0,0);
+    odom.v = Eigen::Vector3d(0.0, 0.0, 0.0);
 
     // gtsam::Vector3 rzyx(0, 0, 10.0/180.0*3.14159);
     // gtsam::Rot3 rot = gtsam::Rot3::RzRyRx(rzyx);
@@ -38,7 +38,7 @@ int main(int argc, char *argv[])
 
     DFBControl controller(param);
     Controller_Output_t ctrl_cmd;
-    DFBControl::CTRL_MODE MPC = DFBControl::MPC;
+    CTRL_MODE MPC = CTRL_MODE::MPC;
 
     for(int i = 0; i < param.factor_graph.OPT_LENS_TRAJ+2; i++)
     {
