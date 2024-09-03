@@ -14,7 +14,7 @@ using symbol_shorthand::S;
 using symbol_shorthand::U;
 using symbol_shorthand::V;
 using symbol_shorthand::X;
-
+using symbol_shorthand::R;
 
 buildJPCMFG::buildJPCMFG(Parameter_t &param) : param_(param)
 {
@@ -67,7 +67,7 @@ void buildJPCMFG::buildFusionFG(gtsam_fg&  _graph,
       if(idx != state_idx)
       {
         // float __dt = (odom_v[idx - state_idx].rcv_stamp - odom_v[idx - state_idx - 1].rcv_stamp).toSec();
-        graph_positioning_.add(IMUFactor(X(idx-1+IDX_P_START), V(idx-1+IDX_P_START), B(idx-1+IDX_P_START), X(idx+IDX_P_START), V(idx+IDX_P_START), dt, 
+        graph_positioning_.add(IMUFactorRg(X(idx-1+IDX_P_START), V(idx-1+IDX_P_START), B(idx-1+IDX_P_START), X(idx+IDX_P_START), V(idx+IDX_P_START), R(0), dt, 
           imu_v[idx - state_idx].a, imu_v[idx - state_idx].w, imu_factor_noise));
         _initial_value.insert(B(idx-1+IDX_P_START), prior_bias);
         gtsam_imuBi zero_bias(gtsam::Vector3(0,0,0), gtsam::Vector3(0,0,0));
@@ -93,6 +93,8 @@ void buildJPCMFG::buildFusionFG(gtsam_fg&  _graph,
     }
 
     _initial_value.insert(B(window_lens_-1+IDX_P_START), gtsam_imuBi());
+    _initial_value.insert(R(0), gtsam::Rot3::identity());
+
     _graph = graph_positioning_;
 
     std::cout << "Build first factor graph" << std::endl;
@@ -120,7 +122,7 @@ void buildJPCMFG::buildFusionFG(gtsam_fg&  _graph,
     float __dt = (odom_v[window_lens_-1].rcv_stamp - odom_v[window_lens_-2].rcv_stamp).toSec();
     std::cout << "__dt is : " << __dt << std::endl;
     graph_positioning_.add(gtsam::PriorFactor<gtsam::Vector3>(V(idx), odom_v[window_lens_-1].v, vel_noise)); 
-    graph_positioning_.add(IMUFactor(X(idx-1), V(idx-1), B(idx-1), X(idx), V(idx), __dt, imu_v[window_lens_-1].a, imu_v[window_lens_-1].w, imu_factor_noise));
+    graph_positioning_.add(IMUFactorRg(X(idx-1), V(idx-1), B(idx-1), X(idx), V(idx), R(0), __dt, imu_v[window_lens_-1].a, imu_v[window_lens_-1].w, imu_factor_noise));
     
     gtsam_imuBi zero_bias(gtsam::Vector3(0,0,0), gtsam::Vector3(0,0,0));
     graph_positioning_.add(BetweenFactor<gtsam_imuBi>(B(idx-1), B(idx), zero_bias, bias_noise));

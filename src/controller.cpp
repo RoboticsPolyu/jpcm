@@ -12,6 +12,7 @@ using symbol_shorthand::U;
 using symbol_shorthand::V;
 using symbol_shorthand::X;
 using symbol_shorthand::B;
+using symbol_shorthand::R;
 
 static std::random_device __randomDevice;
 static std::mt19937 __randomGen(__randomDevice());
@@ -144,11 +145,13 @@ quadrotor_msgs::Px4ctrlDebug DFBControl::fusion(const Odom_Data_t &odom, const I
     gtsam::Pose3 pose;
     gtsam::Vector3 vel;
     gtsam_imuBi imu_bias;
+    gtsam::Rot3 Rg;
 
     pose = result.at<Pose3>(X(idx));
     vel  = result.at<Vector3>(V(idx));
     imu_bias = result.at<gtsam_imuBi>(B(idx));
-
+    Rg   = result.at<gtsam::Rot3>(R(0));
+    std::cout << " --- Gravity rotation:" << Rg.xyz().transpose() << std::endl;
     gtsam::Vector3 fusion_rxyz = pose.rotation().xyz();
 
     log_ << std::setprecision(19)

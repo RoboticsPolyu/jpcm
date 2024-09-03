@@ -20,7 +20,7 @@ namespace UAVFactor
       const Rot3 r_w_mj = pos_j.rotation(jac_r_posej);
 
       double dtt = dt_ * dt_;
-      gtsam::Matrix33 _unrbi_matrix = r_w_mi.inverse().matrix();
+      gtsam::Matrix33 _un_rbi = r_w_mi.inverse().matrix();
 
       gtsam::Matrix33 J_rwg, J_pe_roti, J_ve_rot1, J_dv_rit, J_dv_v;
       gtsam::Matrix33 J_ri, J_rj, J_dr;
@@ -38,7 +38,7 @@ namespace UAVFactor
 
       if (H1)
       {
-         Matrix33 Jac_perr_p = -mass_ * _unrbi_matrix;
+         Matrix33 Jac_perr_p = -mass_ * _un_rbi;
          Matrix33 Jac_perr_r = mass_ * J_pe_roti;
          Matrix33 Jac_rerr_r = J_dr * J_ri;
          Matrix33 Jac_verr_r = mass_ * J_ve_rot1 - drag_matrix * J_dv_rit * dt_; // - A_mat * J_da_ri * dt_;
@@ -59,8 +59,8 @@ namespace UAVFactor
       {
          Matrix93 J_e_v;
          J_e_v.setZero();
-         Matrix33 Jac_perr_veli = -mass_ * _unrbi_matrix * dt_;
-         Matrix33 Jac_verr_v = -mass_ * _unrbi_matrix;
+         Matrix33 Jac_perr_veli = -mass_ * _un_rbi * dt_;
+         Matrix33 Jac_verr_v = -mass_ * _un_rbi;
          J_e_v.block(0, 0, 3, 3) = Jac_perr_veli;
          J_e_v.block(6, 0, 3, 3) = Jac_verr_v - drag_matrix * dt_ * J_dv_v;
 
@@ -70,7 +70,7 @@ namespace UAVFactor
       if (H4)
       {
          J_e_posej.setZero();
-         J_e_posej.block(0, 0, 3, 6) = mass_ * _unrbi_matrix * jac_t_posej;
+         J_e_posej.block(0, 0, 3, 6) = mass_ * _un_rbi * jac_t_posej;
          J_e_posej.block(3, 0, 3, 6) = J_dr * J_rj * jac_r_posej;
          *H4 = J_e_posej;
       }
@@ -79,7 +79,7 @@ namespace UAVFactor
       {
          Matrix93 J_e_vj;
          J_e_vj.setZero();
-         J_e_vj.block(6, 0, 3, 3) = mass_ * _unrbi_matrix;
+         J_e_vj.block(6, 0, 3, 3) = mass_ * _un_rbi;
          *H5 = J_e_vj;
       }
 
@@ -122,7 +122,7 @@ namespace UAVFactor
       const Rot3 r_w_mj = pos_j.rotation(jac_r_posej);
 
       double dtt = dt_ * dt_;
-      gtsam::Matrix33 _unrbi_matrix = r_w_mi.inverse().matrix();
+      gtsam::Matrix33 _un_rbi = r_w_mi.inverse().matrix();
 
       gtsam::Matrix33 J_rwg, J_pe_roti, J_ve_rot1, J_dv_rit, J_dv_v;
       gtsam::Matrix33 J_ri, J_rj, J_dr;
@@ -141,7 +141,7 @@ namespace UAVFactor
 
       if (H1)
       {
-         Matrix33 Jac_perr_p = - _unrbi_matrix;
+         Matrix33 Jac_perr_p = - _un_rbi;
          Matrix33 Jac_perr_r = J_pe_roti;
          Matrix33 Jac_rerr_r = J_dr * J_ri;
          Matrix33 Jac_verr_r = J_ve_rot1; // - A_mat * J_da_ri * dt_;
@@ -162,8 +162,8 @@ namespace UAVFactor
       {
          Matrix93 J_e_v;
          J_e_v.setZero();
-         Matrix33 Jac_perr_veli = -_unrbi_matrix * dt_;
-         Matrix33 Jac_verr_v = -_unrbi_matrix;
+         Matrix33 Jac_perr_veli = -_un_rbi * dt_;
+         Matrix33 Jac_verr_v = -_un_rbi;
          J_e_v.block(0, 0, 3, 3) = Jac_perr_veli;
          J_e_v.block(6, 0, 3, 3) = Jac_verr_v;
 
@@ -173,7 +173,7 @@ namespace UAVFactor
       if (H4)
       {
          J_e_posej.setZero();
-         J_e_posej.block(0, 0, 3, 6) = _unrbi_matrix * jac_t_posej;
+         J_e_posej.block(0, 0, 3, 6) = _un_rbi * jac_t_posej;
          J_e_posej.block(3, 0, 3, 6) = J_dr * J_rj * jac_r_posej;
          *H4 = J_e_posej;
       }
@@ -182,7 +182,7 @@ namespace UAVFactor
       {
          Matrix93 J_e_vj;
          J_e_vj.setZero();
-         J_e_vj.block(6, 0, 3, 3) = _unrbi_matrix;
+         J_e_vj.block(6, 0, 3, 3) = _un_rbi;
          *H5 = J_e_vj;
       }
 
@@ -220,17 +220,15 @@ namespace UAVFactor
 
       Matrix36 jac_t_posei, jac_t_posej;
       Matrix36 jac_r_posei, jac_r_posej;
-      Matrix33 J_Rg;
+      Matrix93 jac_Rg;
+      double dtt = dt_ * dt_;
 
       const Point3 p_w_mi = pos_i.translation(jac_t_posei);
-      const Rot3 r_w_mi   = pos_i.rotation(jac_r_posei);
+      const Rot3   r_w_mi = pos_i.rotation(jac_r_posei);
       const Point3 p_w_mj = pos_j.translation(jac_t_posej);
-      const Rot3 r_w_mj   = pos_j.rotation(jac_r_posej);
+      const Rot3   r_w_mj = pos_j.rotation(jac_r_posej);
 
-      double dtt = dt_ * dt_;
-      gtsam::Matrix33 _unrbi_matrix = r_w_mi.inverse().matrix();
-
-      gtsam::Matrix33 J_rwg, J_pe_roti, J_ve_rot1, J_dv_rit, J_dv_v;
+      gtsam::Matrix33 J_rwg, J_pe_roti, J_ve_rot1, J_dv_rit, J_dv_v, J_rg;
       gtsam::Matrix33 J_ri, J_rj, J_dr;
       gtsam::Matrix36 J_acc_bias, J_gyro_bias;
       gtsam::Vector3  cor_acc  = bias_i.correctAccelerometer(acc_, J_acc_bias);
@@ -238,23 +236,24 @@ namespace UAVFactor
 
       // std::cout << "cor_acc: " << cor_acc << std::endl;
       // std::cout << "cor_gyro: " << cor_gyro << std::endl;
-      
-      gtsam::Vector3 pos_err = r_w_mi.unrotate(p_w_mj - vel_i * dt_ - 0.5f * Rg.rotate(gI_) * dtt - p_w_mi, J_pe_roti) - 0.5f * cor_acc * dtt;
-      gtsam::Vector3 rot_err = Rot3::Logmap(r_w_mi.between(r_w_mj, J_ri, J_rj), J_dr) - cor_gyro * dt_;
-      gtsam::Vector3 vel_err = r_w_mi.unrotate(vel_j - vel_i + Rg.rotate(gI_, J_Rg) * dt_, J_ve_rot1)  - cor_acc * dt_;
+      gtsam::Matrix33  _un_rbi = r_w_mi.inverse().matrix();
+      gtsam::Vector3   pos_err = r_w_mi.unrotate(p_w_mj - vel_i * dt_ - 0.5f * Rg.rotate(gI_) * dtt - p_w_mi, J_pe_roti) - 0.5f * cor_acc * dtt;
+      gtsam::Vector3   rot_err = Rot3::Logmap(r_w_mi.between(r_w_mj, J_ri, J_rj), J_dr) - cor_gyro * dt_;
+      gtsam::Vector3   vel_err = r_w_mi.unrotate(vel_j - vel_i + Rg.rotate(gI_, J_rg) * dt_, J_ve_rot1)  - cor_acc * dt_;
 
       Matrix96 J_e_pi, J_e_posej;
 
       if (H6)
       {
-         J_Rg.setZero();
-         J_Rg.block(6, 0, 3, 3) = J_ve_rot1 * J_Rg * dt_;
-         *H6 = J_Rg;
+         jac_Rg.setZero();
+         jac_Rg.block(0, 0, 3, 3) = _un_rbi * -0.5f * J_rg * dtt;
+         jac_Rg.block(6, 0, 3, 3) = _un_rbi * J_rg * dt_;
+         *H6 = jac_Rg;
       }
 
       if (H1)
       {
-         Matrix33 Jac_perr_p = - _unrbi_matrix;
+         Matrix33 Jac_perr_p = - _un_rbi;
          Matrix33 Jac_perr_r = J_pe_roti;
          Matrix33 Jac_rerr_r = J_dr * J_ri;
          Matrix33 Jac_verr_r = J_ve_rot1; // - A_mat * J_da_ri * dt_;
@@ -275,8 +274,8 @@ namespace UAVFactor
       {
          Matrix93 J_e_v;
          J_e_v.setZero();
-         Matrix33 Jac_perr_veli = -_unrbi_matrix * dt_;
-         Matrix33 Jac_verr_v = -_unrbi_matrix;
+         Matrix33 Jac_perr_veli  = -_un_rbi * dt_;
+         Matrix33 Jac_verr_v     = -_un_rbi;
          J_e_v.block(0, 0, 3, 3) = Jac_perr_veli;
          J_e_v.block(6, 0, 3, 3) = Jac_verr_v;
 
@@ -286,7 +285,7 @@ namespace UAVFactor
       if (H4)
       {
          J_e_posej.setZero();
-         J_e_posej.block(0, 0, 3, 6) = _unrbi_matrix * jac_t_posej;
+         J_e_posej.block(0, 0, 3, 6) = _un_rbi * jac_t_posej;
          J_e_posej.block(3, 0, 3, 6) = J_dr * J_rj * jac_r_posej;
          *H4 = J_e_posej;
       }
@@ -295,7 +294,7 @@ namespace UAVFactor
       {
          Matrix93 J_e_vj;
          J_e_vj.setZero();
-         J_e_vj.block(6, 0, 3, 3) = _unrbi_matrix;
+         J_e_vj.block(6, 0, 3, 3) = _un_rbi;
          *H5 = J_e_vj;
       }
 

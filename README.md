@@ -3,7 +3,7 @@
 ## Supporting:
 
 Estimator:
-(1) FGO-based FakeGPS + IMU
+(1) FGO-based FakeGPS + IMU (pose, velocity, bias, gravity rotation)
 
 Controller:
 (1) Differential-Flatness-Based Control (PID)
