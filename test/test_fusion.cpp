@@ -89,12 +89,9 @@ int main(int argc, char *argv[])
             // std::cout << "Rx PI: " << gtsam::Rot3::Rx(-90.0/180.0*3.14159) *gtsam::Rot3::Ry(-90.0/180.0*3.14159) << std::endl;
             
             imu_raw_data_b = imu_raw_data;
-            imu_raw_data_b.w = gtsam::Rot3::Rx(3.14159).rotate(imu_raw_data.w);
-            imu_raw_data_b.a = gtsam::Rot3::Rx(3.14159).rotate(imu_raw_data.a);
 
             // imu_raw_data_b.w = gtsam::Rot3::Rx(-90.0/180.0*3.14159) *gtsam::Rot3::Ry(-90.0/180.0*3.14159).rotate(imu_raw_data.w);
             // imu_raw_data_b.a = gtsam::Rot3::Rx(-90.0/180.0*3.14159) *gtsam::Rot3::Ry(-90.0/180.0*3.14159).rotate(imu_raw_data.a);
-
             controller.fusion(odom_data_noise, imu_raw_data_b, odom_data);
         }
     }

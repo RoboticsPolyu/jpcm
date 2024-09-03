@@ -55,15 +55,15 @@ bool DFBControl::initializeState(const std::vector<Imu_Data_t> &imu_raw, const s
     {
       float __dt = (GT[idx - state_idx_].rcv_stamp - GT[idx - 1].rcv_stamp).toSec();
       graph_init.add(IMUFactor(X(idx-1), V(idx-1), B(idx-1), X(idx), V(idx), __dt, imu_raw[idx].a, imu_raw[idx].w, imu_factor_noise));
-      gtsam::imuBias::ConstantBias zero_bias(gtsam::Vector3(0,0,0), gtsam::Vector3(0,0,0));
-      graph_init.add(BetweenFactor<gtsam::imuBias::ConstantBias>(B(idx-1), B(idx), zero_bias, bias_noise));
+      gtsam_imuBi zero_bias(gtsam::Vector3(0,0,0), gtsam::Vector3(0,0,0));
+      graph_init.add(BetweenFactor<gtsam_imuBi>(B(idx-1), B(idx), zero_bias, bias_noise));
     }
 
     // graph_init.add(gtsam::GPSFactor(X(idx), odom_v[idx].p, noise_model_gps)); 
     graph_init.add(gtsam::PriorFactor<gtsam::Pose3>(X(idx), pose, prior_vicon_noise)); 
     // graph_init.add(gtsam::PriorFactor<gtsam::Vector3>(V(idx), v, prior_vel_noise)); 
 
-    initial_value.insert(B(idx), gtsam::imuBias::ConstantBias());
+    initial_value.insert(B(idx), gtsam_imuBi());
     initial_value.insert(X(idx), pose);
     initial_value.insert(V(idx), v);
   }
@@ -86,8 +86,8 @@ bool DFBControl::initializeState(const std::vector<Imu_Data_t> &imu_raw, const s
   std::cout << " ---------- Initialization Time: [ " << opt_cost << " ] " << endl;
 
   gtsam::Vector3 vel;
-  gtsam::imuBias::ConstantBias imu_bias;
-  imu_bias  = result.at<gtsam::imuBias::ConstantBias>(B(0));
+  gtsam_imuBi imu_bias;
+  imu_bias  = result.at<gtsam_imuBi>(B(0));
   init_vel  = result.at<Vector3>(V(0));
   init_bias = imu_bias.vector();
 
@@ -114,11 +114,12 @@ quadrotor_msgs::Px4ctrlDebug DFBControl::fusion(const Odom_Data_t &odom, const I
 
   if(odom_data_v_.size() == window_lens_)
   {
-    if(!init_state_flag)
+    if(!init_state_flag_)
     {
-      initializeState(imu_data_v_, odom_data_v_, init_vel, init_bias);
-      init_state_flag = true;
+      initializeState(imu_data_v_, odom_data_v_, init_vel_, init_bias_);
+      init_state_flag_ = true;
     }
+
     gtsam::LevenbergMarquardtParams parameters;
     parameters.absoluteErrorTol = 100;
     parameters.relativeErrorTol = 1e-2;
@@ -141,11 +142,11 @@ quadrotor_msgs::Px4ctrlDebug DFBControl::fusion(const Odom_Data_t &odom, const I
     uint16_t idx =  window_lens_ + state_idx_ - 2 + IDX_START;
     gtsam::Pose3 pose;
     gtsam::Vector3 vel;
-    gtsam::imuBias::ConstantBias imu_bias;
+    gtsam_imuBi imu_bias;
 
     pose = result.at<Pose3>(X(idx));
     vel  = result.at<Vector3>(V(idx));
-    imu_bias = result.at<gtsam::imuBias::ConstantBias>(B(idx));
+    imu_bias = result.at<gtsam_imuBi>(B(idx));
 
     gtsam::Vector3 fusion_rxyz = pose.rotation().xyz();
 
@@ -222,29 +223,31 @@ void DFBControl::buildFactorGraph(gtsam::NonlinearFactorGraph& _graph, gtsam::Va
   // GPS noise
   auto noise_model_gps = noiseModel::Isotropic::Sigma(3, param_.factor_graph.POS_MEAS_COV);
   // gtsam::GPSFactor gps_factor(X(correction_count), Point3(gps(0), gps(1), gps(2)), noise_model_gps);
-
+  gtsam_imuBi prior_bias(init_bias_);
+  // gtsam_imuBi prior_bias(gtsam::Vector3(0.12, -0.7, 0), gtsam::Vector3(0, 0, -0.004));
   if(state_idx_ == 0) 
   {
     for(uint16_t idx =  state_idx_; idx < window_lens_ + state_idx_; idx++)
     {
-      gtsam::Rot3 rot  = gtsam::Rot3(odom_data_v_[idx - state_idx_].q);
-      gtsam::Pose3 pose(rot, odom_data_v_[idx - state_idx_].p);
-      gtsam::Vector3 v = odom_data_v_[idx - state_idx_].v;
+      gtsam::Rot3 rot  = gtsam::Rot3(odom_v[idx - state_idx_].q);
+      gtsam::Pose3 pose(rot, odom_v[idx - state_idx_].p);
+      gtsam::Vector3 v = odom_v[idx - state_idx_].v;
 
       if(idx != state_idx_)
       {
         // float __dt = (odom_v[idx - state_idx_].rcv_stamp - odom_v[idx - state_idx_ - 1].rcv_stamp).toSec();
-        graph_positioning_.add(IMUFactor(X(idx-1+IDX_START), V(idx-1+IDX_START), B(idx-1+IDX_START), X(idx+IDX_START), V(idx+IDX_START), dt, imu_v[idx - state_idx_].a, imu_v[idx - state_idx_].w, imu_factor_noise));
-        _initial_value.insert(B(idx-1+IDX_START), gtsam::imuBias::ConstantBias());
-        gtsam::imuBias::ConstantBias zero_bias(gtsam::Vector3(0,0,0), gtsam::Vector3(0,0,0));
-        graph_positioning_.add(BetweenFactor<gtsam::imuBias::ConstantBias>(B(idx-1+IDX_START), B(idx+IDX_START), zero_bias, bias_noise));
+        graph_positioning_.add(IMUFactor(X(idx-1+IDX_START), V(idx-1+IDX_START), B(idx-1+IDX_START), X(idx+IDX_START), V(idx+IDX_START), dt, 
+          imu_v[idx - state_idx_].a, imu_v[idx - state_idx_].w, imu_factor_noise));
+        _initial_value.insert(B(idx-1+IDX_START), prior_bias);
+        gtsam_imuBi zero_bias(gtsam::Vector3(0,0,0), gtsam::Vector3(0,0,0));
+        graph_positioning_.add(BetweenFactor<gtsam_imuBi>(B(idx-1+IDX_START), B(idx+IDX_START), zero_bias, bias_noise));
       }
       
       if(idx == state_idx_)
       {
-        graph_positioning_.add(gtsam::PriorFactor<gtsam::imuBias::ConstantBias>(B(idx+IDX_START), gtsam::imuBias::ConstantBias(), prior_bias_noise));
-        graph_positioning_.add(gtsam::PriorFactor<gtsam::Pose3>  (X(idx+IDX_START), pose, prior_vicon_noise)); 
-        graph_positioning_.add(gtsam::PriorFactor<gtsam::Vector3>(V(idx+IDX_START), v,    prior_vel_noise)); 
+        graph_positioning_.add(gtsam::PriorFactor<gtsam_imuBi>   (B(idx+IDX_START), prior_bias, prior_bias_noise));
+        graph_positioning_.add(gtsam::PriorFactor<gtsam::Pose3>  (X(idx+IDX_START), pose,       prior_vicon_noise)); 
+        graph_positioning_.add(gtsam::PriorFactor<gtsam::Vector3>(V(idx+IDX_START), init_vel_,  prior_vel_noise)); 
       }
       else
       {
@@ -258,7 +261,7 @@ void DFBControl::buildFactorGraph(gtsam::NonlinearFactorGraph& _graph, gtsam::Va
 
     }
 
-    _initial_value.insert(B(window_lens_-1+IDX_START), gtsam::imuBias::ConstantBias());
+    _initial_value.insert(B(window_lens_-1+IDX_START), gtsam_imuBi());
     _graph = graph_positioning_;
 
     std::cout << "Build first factor graph" << std::endl;
@@ -287,9 +290,9 @@ void DFBControl::buildFactorGraph(gtsam::NonlinearFactorGraph& _graph, gtsam::Va
     std::cout << "__dt is : " << __dt << std::endl;
     // graph_positioning_.add(gtsam::PriorFactor<gtsam::Vector3>(V(idx), odom_v[window_lens_-1].v, vel_noise)); 
     graph_positioning_.add(IMUFactor(X(idx-1), V(idx-1), B(idx-1), X(idx), V(idx), __dt, imu_v[window_lens_-1].a, imu_v[window_lens_-1].w, imu_factor_noise));
-    gtsam::imuBias::ConstantBias zero_bias(gtsam::Vector3(0,0,0), gtsam::Vector3(0,0,0));
-    graph_positioning_.add(BetweenFactor<gtsam::imuBias::ConstantBias>(B(idx-1), B(idx), zero_bias, bias_noise));
-    _initial_value.insert(B(idx), gtsam::imuBias::ConstantBias());
+    gtsam_imuBi zero_bias(gtsam::Vector3(0,0,0), gtsam::Vector3(0,0,0));
+    graph_positioning_.add(BetweenFactor<gtsam_imuBi>(B(idx-1), B(idx), zero_bias, bias_noise));
+    _initial_value.insert(B(idx), gtsam_imuBi());
 
     _initial_value.insert(X(idx), pose);
     _initial_value.insert(V(idx), odom_v[window_lens_-1].v);
@@ -493,7 +496,7 @@ quadrotor_msgs::Px4ctrlDebug DFBControl::calculateControl(const Desired_State_t 
     gtsam::Vector4 input;
     gtsam::Pose3   pose;
     gtsam::Vector3 vel;
-    gtsam::imuBias::ConstantBias imu_bias;
+    gtsam_imuBi imu_bias;
 
     input = result.at<gtsam::Vector4>(U(0));
     Eigen::Vector3d des_acc(0, 0, input[0]);
@@ -618,8 +621,8 @@ void DFBControl::buildFactorGraph(gtsam::NonlinearFactorGraph& _graph, gtsam::Va
       if(idx != state_idx_)
       {
         graph_positioning_.add(IMUFactor(X(idx-1+IDX_START), V(idx-1+IDX_START), B(idx-1+IDX_START), X(idx+IDX_START), V(idx+IDX_START), dt, imu_v[idx - state_idx_].a, imu_v[idx - state_idx_].w, imu_factor_noise));
-        _initial_value.insert(B(idx-1+IDX_START), gtsam::imuBias::ConstantBias());
-        graph_positioning_.add(BetweenFactor<gtsam::imuBias::ConstantBias>(B(idx-1+IDX_START), B(idx+IDX_START), imuBias::ConstantBias(), bias_noise));
+        _initial_value.insert(B(idx-1+IDX_START), gtsam_imuBi());
+        graph_positioning_.add(BetweenFactor<gtsam_imuBi>(B(idx-1+IDX_START), B(idx+IDX_START), imuBias::ConstantBias(), bias_noise));
       }
 
       // graph_positioning_.add(gtsam::PriorFactor<gtsam::Pose3>  (X(idx+IDX_START), pose, vicon_noise)); 
@@ -628,7 +631,7 @@ void DFBControl::buildFactorGraph(gtsam::NonlinearFactorGraph& _graph, gtsam::Va
       
       if(idx == state_idx_)
       {
-        graph_positioning_.add(gtsam::PriorFactor<gtsam::imuBias::ConstantBias>(B(idx+IDX_START), gtsam::imuBias::ConstantBias(), prior_bias_noise));
+        graph_positioning_.add(gtsam::PriorFactor<gtsam_imuBi>(B(idx+IDX_START), gtsam_imuBi(), prior_bias_noise));
         graph_positioning_.add(gtsam::PriorFactor<gtsam::Pose3>  (X(idx+IDX_START), pose, prior_vicon_noise)); 
         graph_positioning_.add(gtsam::PriorFactor<gtsam::Vector3>(V(idx+IDX_START), odom_data_v_[idx - state_idx_].v, prior_vel_noise)); 
       }
@@ -642,7 +645,7 @@ void DFBControl::buildFactorGraph(gtsam::NonlinearFactorGraph& _graph, gtsam::Va
 
     }
 
-    _initial_value.insert(B(window_lens_-1+IDX_START), gtsam::imuBias::ConstantBias());
+    _initial_value.insert(B(window_lens_-1+IDX_START), gtsam_imuBi());
     _graph = graph_positioning_;
 
     // std::cout << "graph_positioning_" << std::endl;
@@ -730,8 +733,8 @@ void DFBControl::buildFactorGraph(gtsam::NonlinearFactorGraph& _graph, gtsam::Va
     graph_positioning_.add(gtsam::GPSFactor(X(idx), odom_data_v_[window_lens_-1].p, noise_model_gps)); 
     // graph_positioning_.add(gtsam::PriorFactor<gtsam::Vector3>(V(idx), odom_data_v_[window_lens_-1].v, vel_noise)); 
     graph_positioning_.add(IMUFactor(X(idx-1), V(idx-1), B(idx-1), X(idx), V(idx), dt, imu_v[window_lens_-1].a, imu_v[window_lens_-1].w, imu_factor_noise));
-    graph_positioning_.add(BetweenFactor<gtsam::imuBias::ConstantBias>(B(idx-1), B(idx), imuBias::ConstantBias(), bias_noise));
-    _initial_value.insert(B(idx), gtsam::imuBias::ConstantBias());
+    graph_positioning_.add(BetweenFactor<gtsam_imuBi>(B(idx-1), B(idx), imuBias::ConstantBias(), bias_noise));
+    _initial_value.insert(B(idx), gtsam_imuBi());
 
     // std::cout << "MarginalizeOut factor graph" << std::endl;
     // graph_positioning_.print();

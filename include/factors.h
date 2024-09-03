@@ -8,6 +8,7 @@ using namespace gtsam_wrapper;
 
 namespace UAVFactor
 {
+    using gtsam_imuBi = gtsam::imuBias::ConstantBias;
     /*
     * MPC based FGO, generating Thrust and Gyro
     */
@@ -41,7 +42,7 @@ namespace UAVFactor
 
     };
 
-    class GTSAM_EXPORT IMUFactor : public NoiseModelFactor5<gtsam::Pose3, gtsam::Vector3, gtsam::imuBias::ConstantBias, gtsam::Pose3, gtsam::Vector3>
+    class GTSAM_EXPORT IMUFactor : public NoiseModelFactor5<gtsam::Pose3, gtsam::Vector3, gtsam_imuBi, gtsam::Pose3, gtsam::Vector3>
     {
     public:
         typedef boost::shared_ptr<IMUFactor> shared_ptr;
@@ -54,7 +55,7 @@ namespace UAVFactor
         {
         }
 
-        Vector evaluateError(const gtsam::Pose3 &pos_i, const gtsam::Vector3 &vel_i, const gtsam::imuBias::ConstantBias &bias_i,
+        Vector evaluateError(const gtsam::Pose3 &pos_i, const gtsam::Vector3 &vel_i, const gtsam_imuBi &bias_i,
                              const gtsam::Pose3 &pos_j, const gtsam::Vector3 &vel_j, 
                              boost::optional<Matrix &> H1 = boost::none, boost::optional<Matrix &> H2 = boost::none,
                              boost::optional<Matrix &> H3 = boost::none, boost::optional<Matrix &> H4 = boost::none,
@@ -62,7 +63,7 @@ namespace UAVFactor
 
     private:
         typedef IMUFactor This;
-        typedef NoiseModelFactor5<gtsam::Pose3, gtsam::Vector3, gtsam::imuBias::ConstantBias, gtsam::Pose3, gtsam::Vector3>
+        typedef NoiseModelFactor5<gtsam::Pose3, gtsam::Vector3, gtsam_imuBi, gtsam::Pose3, gtsam::Vector3>
             Base;
         
         float           dt_     = 0.01f;

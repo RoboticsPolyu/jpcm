@@ -77,7 +77,8 @@ public:
     MAX
   };
 
-  using Dist_Dou = std::normal_distribution<double>;
+  using Dist_Dou    = std::normal_distribution<double>;
+  using gtsam_imuBi = gtsam::imuBias::ConstantBias;
 
   DFBControl(Parameter_t &);
   
@@ -130,7 +131,9 @@ private:
   std::vector<Odom_Data_t> odom_data_noise_;
   std::vector<Imu_Data_t>  imu_data_v_;
   
-  bool init_state_flag = false;
+  bool init_state_flag_ = false;
+  gtsam::Vector3 init_vel_;
+  gtsam::Vector6 init_bias_;
 
   double fromQuaternion2yaw(Eigen::Quaterniond q);
   double limit_value(double upper_bound,  double input, double lower_bound);

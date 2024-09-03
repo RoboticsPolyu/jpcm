@@ -105,7 +105,7 @@ namespace UAVFactor
        : Base(model, p_i, vel_i, bias_i, p_j, vel_j), dt_(dt), acc_(acc), gyro_(gyro) {}
 
    Vector IMUFactor::evaluateError(const gtsam::Pose3 &pos_i, const gtsam::Vector3 &vel_i,
-                                   const gtsam::imuBias::ConstantBias &bias_i,
+                                   const gtsam_imuBi &bias_i,
                                    const gtsam::Pose3 &pos_j, const gtsam::Vector3 &vel_j,
                                    boost::optional<Matrix &> H1, boost::optional<Matrix &> H2,
                                    boost::optional<Matrix &> H3, boost::optional<Matrix &> H4,
@@ -135,7 +135,7 @@ namespace UAVFactor
       
       gtsam::Vector3 pos_err = r_w_mi.unrotate(p_w_mj - vel_i * dt_ - 0.5f * gI_ * dtt - p_w_mi, J_pe_roti) - 0.5f * cor_acc * dtt;
       gtsam::Vector3 rot_err = Rot3::Logmap(r_w_mi.between(r_w_mj, J_ri, J_rj), J_dr) - cor_gyro * dt_;
-      gtsam::Vector3 vel_err = r_w_mi.unrotate(vel_j - vel_i - gI_ * dt_, J_ve_rot1) - cor_acc * dt_;
+      gtsam::Vector3 vel_err = r_w_mi.unrotate(vel_j - vel_i + gI_ * dt_, J_ve_rot1)  - cor_acc * dt_;
 
       Matrix96 J_e_pi, J_e_posej;
 
