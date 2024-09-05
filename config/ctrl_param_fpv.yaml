@@ -172,6 +172,10 @@ Factor_graph:
     # acc_bias_imu:     0.001
     # gyro_bias_sigma:  0.0001
 
+    opt_gravity_rot:    false
+    prior_gravity_roll:  0.00
+    prior_gravity_pitch: 0.00
+    
     prior_acc_sigma:  0.5
     prior_gyro_sigma: 0.5
 

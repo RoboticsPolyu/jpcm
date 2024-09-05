@@ -103,7 +103,7 @@ bool DFBControl::initializeState(const std::vector<Imu_Data_t> &imu_raw, const s
 quadrotor_msgs::Px4ctrlDebug DFBControl::fusion(const Odom_Data_t &odom, const Imu_Data_t &imu_raw, const Odom_Data_t &GT)
 {
   odom_data_v_.push_back(GT);
-  gtsam::Vector3 gt_rxyz = gtsam::Rot3(GT.q).xyz();
+  gtsam::Vector3 gt_rxyz = gtsam::Rot3(GT.q).rpy();
   
   odom_data_noise_.push_back(odom);
   imu_data_v_.push_back(imu_raw);
@@ -150,9 +150,12 @@ quadrotor_msgs::Px4ctrlDebug DFBControl::fusion(const Odom_Data_t &odom, const I
     pose = result.at<Pose3>(X(idx));
     vel  = result.at<Vector3>(V(idx));
     imu_bias = result.at<gtsam_imuBi>(B(idx));
-    Rg   = result.at<gtsam::Rot3>(R(0));
-    std::cout << " --- Gravity rotation:" << Rg.xyz().transpose() << std::endl;
-    gtsam::Vector3 fusion_rxyz = pose.rotation().xyz();
+    if(param_.factor_graph.opt_gravity_rot)
+    {
+      Rg = result.at<gtsam::Rot3>(R(0));
+      std::cout << " --- Gravity rotation:" << Rg.rpy().transpose() << std::endl;
+    }
+    gtsam::Vector3 fusion_rxyz = pose.rotation().rpy();
 
     log_ << std::setprecision(19)
         // GT
@@ -208,13 +211,13 @@ Odom_Data_t DFBControl::add_Guassian_noise(const Odom_Data_t &odom)
   gtsam::Vector3 vel_noise = gtsam::Vector3(velocity_noise_x(__randomGen), velocity_noise_y(__randomGen), velocity_noise_z(__randomGen));
   gtsam::Vector3 rot_noise = gtsam::Vector3(rotation_noise_x(__randomGen), rotation_noise_y(__randomGen), rotation_noise_z(__randomGen));
   gtsam::Vector3 rot_add   = gtsam::Rot3::Logmap(gtsam::Rot3(odom.q)) + rot_noise;
-  gtsam::Rot3   rot3_add   = gtsam::Rot3::Expmap(rot_add);
+  gtsam::Rot3    rot3_add  = gtsam::Rot3::Expmap(rot_add);
 
   Odom_Data_t odom_noise;
   odom_noise.rcv_stamp = odom.rcv_stamp;
-  odom_noise.p = odom.p + pos_noise;
-  odom_noise.v = odom.v + vel_noise;
-  odom_noise.q = Eigen::Quaterniond(rot3_add.toQuaternion().w(), rot3_add.toQuaternion().x(), rot3_add.toQuaternion().y(), rot3_add.toQuaternion().z());
+  odom_noise.p         = odom.p + pos_noise;
+  odom_noise.v         = odom.v + vel_noise;
+  odom_noise.q         = Eigen::Quaterniond(rot3_add.toQuaternion().w(), rot3_add.toQuaternion().x(), rot3_add.toQuaternion().y(), rot3_add.toQuaternion().z());
 
   return odom_noise;
 }
@@ -237,14 +240,10 @@ quadrotor_msgs::Px4ctrlDebug DFBControl::calculateControl(const Desired_State_t 
 
   double thrust2   = 0;
   gtsam::Vector3 bodyrates2(0,0,0);
-  bool isMPC = 0;
-
-  std::cout << "des_data_v_.size() " << des_data_v_.size() << std::endl;
 
   if(timeout || mode_switch == DFBC || des_data_v_.size() < opt_traj_lens_)
   {
     DFBControl::calculateControl(des_data_v_[0], odom_noise, imu, thr_bodyrate_u);
-    isMPC = false;
   }
   else if(mode_switch == JPCM && des_data_v_.size() == opt_traj_lens_ ) // && odom.p.z() > hight_thr)
   {
@@ -256,7 +255,6 @@ quadrotor_msgs::Px4ctrlDebug DFBControl::calculateControl(const Desired_State_t 
     parameters.maxIterations    = 10;
     parameters.verbosity        = gtsam::NonlinearOptimizerParams::SILENT;
     parameters.verbosityLM      = gtsam::LevenbergMarquardtParams::SILENT;
-    // graph_.empty();
 
     std::cout << " - JMPC - " << std::endl;
     FGbuilder->buildFactorGraph(graph_, initial_value_, des_data_v_, odom_data_noise_, imu_data_v_, dt_, state_idx_);
@@ -284,11 +282,10 @@ quadrotor_msgs::Px4ctrlDebug DFBControl::calculateControl(const Desired_State_t 
     gtsam::Vector3 vel;
 
     pose = result.at<Pose3>(X(idx));
-    vel = result.at<Vector3>(V(idx));
+    vel  = result.at<Vector3>(V(idx));
     gtsam::Vector3 eular_xyz = pose.rotation().xyz();
     gtsam::Vector3 gt_eular_xyz = gtsam::Rot3(odom.q).xyz();
     gtsam::Vector3 des_eular_xyz = gtsam::Rot3(des_data_v_[0].q).xyz();
-    isMPC = true;
     float distance_est = (des_data_v_[0].p - pose.translation()).norm();
 
     std::cout << " ---------- Optimize Time: [ " << opt_cost << " ], " << "ori distance: [ " << distance << " ], est distance: [" << distance_est << " ]" << endl;
@@ -315,7 +312,6 @@ quadrotor_msgs::Px4ctrlDebug DFBControl::calculateControl(const Desired_State_t 
 
       << imu.w.x() << " " << imu.w.y() << " " << imu.w.z() << " "
       << imu.a.x() << " " << imu.a.y() << " " << imu.a.z() << " "
-      << isMPC << " "
       << std::endl;
   }
 

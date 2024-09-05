@@ -85,17 +85,17 @@ msg_timeout:
     bat:  0.5
 
 # VICON in IMU
-qw: 0.9995765
-qx: 0.0111545
+qw:  0.9995765
+qx:  0.0111545
 qy: -0.0212204
 qz: -0.0164938
 
 x: -0.0147499837733
-y: 0.00272349349494
+y:  0.00272349349494
 z: -0.0106913068398
 
 Factor_graph:
-    LOG_NAME:              TGYRO
+    LOG_NAME: TGYRO
 
     PRI_VICON_POS_COV: 0.001
     PRI_VICON_VEL_COV: 0.001
@@ -125,7 +125,7 @@ Factor_graph:
     DYNAMIC_P_COV:     0.0001
     DYNAMIC_R_COV:     0.0001
     DYNAMIC_V_COV:     0.0001
-    
+
     INPUT_JERK_T:      0.2
     INPUT_JERK_M:      0.1
     INPUT_JERK_M3:     0.01
@@ -155,14 +155,14 @@ Factor_graph:
     # PRIOR_VEL_MEAS_COV:   0.10
     # PRIOR_ROT_MEAS_COV:   0.01
 
-    POS_MEAS_MEAN:  0.000
-    POS_MEAS_COV:   0.500 # 0.05
-    VEL_MEAS_COV:   0.050
-    ROT_MEAS_COV:   0.001
+    POS_MEAS_MEAN:      0.000
+    POS_MEAS_COV:       0.500 # 0.05
+    VEL_MEAS_COV:       0.050
+    ROT_MEAS_COV:       0.001
     
-    PRIOR_POS_MEAS_COV:   0.50 # 0.05
-    PRIOR_VEL_MEAS_COV:   0.05
-    PRIOR_ROT_MEAS_COV:   0.01
+    PRIOR_POS_MEAS_COV: 0.500 # 0.05
+    PRIOR_VEL_MEAS_COV: 1.000
+    PRIOR_ROT_MEAS_COV: 0.100
 
     # IMU Params
     acc_sigma_x:        0.1 # 0.3
@@ -175,7 +175,7 @@ Factor_graph:
     acc_bias_imu_z:     0.001
 
     gyro_sigma_x:       0.01 # 0.02
-    gyro_bias_sigma_x:  0.0000018
+    gyro_bias_sigma_x:  0.000018
 
     gyro_sigma_y:       0.03
     gyro_bias_sigma_y:  0.001
@@ -188,8 +188,13 @@ Factor_graph:
     # acc_bias_imu:     0.001
     # gyro_bias_sigma:  0.0001
 
-    prior_acc_sigma:  0.01
-    prior_gyro_sigma: 0.01
+    prior_acc_sigma:    0.01
+    prior_gyro_sigma:   0.01
 
+    opt_gravity_rot:    true
+    prior_gravity_roll:  0.00
+    prior_gravity_pitch: 0.00
+
+    use_vel: false
     # DFBC 1 MPC 2 JPCM 3
 

@@ -124,6 +124,9 @@ public:
 
 		double prior_acc_sigma;
 		double prior_gyro_sigma;
+
+		bool opt_gravity_rot;
+		
 	};
 
 	Gain gain;
