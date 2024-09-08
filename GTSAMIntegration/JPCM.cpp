@@ -161,10 +161,17 @@ void buildJPCMFG::buildFusionFG(gtsam_fg&  _graph,
     
     gtsam_imuBi zero_bias(gtsam::Vector3(0,0,0), gtsam::Vector3(0,0,0));
     graph_positioning_.add(BetweenFactor<gtsam_imuBi>(B(idx-1), B(idx), zero_bias, bias_noise));
-    _initial_value.insert(B(idx), gtsam_imuBi());
 
-    _initial_value.insert(X(idx), pose);
-    _initial_value.insert(V(idx), odom_v[window_lens_-1].v);
+    gtsam::Pose3   __pose     = _initial_value.at<Pose3>  (X(idx-1));
+    gtsam::Vector3 __vel      = _initial_value.at<Vector3>(V(idx-1));
+    gtsam_imuBi    __imu_bias = _initial_value.at<gtsam_imuBi>(B(idx-1));
+
+    std::pair<gtsam::Pose3, gtsam::Vector3> pred_State = 
+      propagateIMU(__pose, __vel, __imu_bias.correctAccelerometer(imu_v[window_lens_-1].a), __imu_bias.correctGyroscope(imu_v[window_lens_-1].w), __dt);
+
+    _initial_value.insert(B(idx), __imu_bias);
+    _initial_value.insert(X(idx), pred_State.first);
+    _initial_value.insert(V(idx), pred_State.second);
 
     _graph = graph_positioning_;
   
@@ -179,7 +186,7 @@ void buildJPCMFG::buildFusionFG(gtsam_fg&  _graph,
 void buildJPCMFG::buildJoinedFG(gtsam_fg& _graph, gtsam_sols& _initial_value, 
                         const std::vector<Desired_State_t> &des_seq, double dt, uint64_t& state_idx)
 {
-  auto input_jerk  = noiseModel::Diagonal::Sigmas(Vector4(param_.factor_graph.INPUT_JERK_T, 
+  auto input_jerk = noiseModel::Diagonal::Sigmas(Vector4(param_.factor_graph.INPUT_JERK_T, 
       param_.factor_graph.INPUT_JERK_M, param_.factor_graph.INPUT_JERK_M, param_.factor_graph.INPUT_JERK_M3));
 
   auto dynamics_noise = noiseModel::Diagonal::Sigmas((Vector(9) << Vector3::Constant(param_.factor_graph.DYNAMIC_P_COV), 
@@ -256,7 +263,7 @@ void buildJPCMFG::buildJoinedFG(gtsam_fg& _graph, gtsam_sols& _initial_value,
 }
 
 /* 
- * Single-positioning JPCM 
+ * Single-point JPCM 
  */
 void buildJPCMFG::buildFactorGraph(gtsam_fg& _graph, gtsam_sols& _initial_value, 
   const std::vector<Desired_State_t> &des_seq, const Odom_Data_t &odom, double dt)

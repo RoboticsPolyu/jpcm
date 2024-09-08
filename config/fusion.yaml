@@ -84,16 +84,6 @@ msg_timeout:
     imu:  0.5
     bat:  0.5
 
-# VICON in IMU
-qw:  0.9995765
-qx:  0.0111545
-qy: -0.0212204
-qz: -0.0164938
-
-x: -0.0147499837733
-y:  0.00272349349494
-z: -0.0106913068398
-
 Factor_graph:
     LOG_NAME: TGYRO
 
@@ -191,7 +181,7 @@ Factor_graph:
     prior_acc_sigma:    0.01
     prior_gyro_sigma:   0.01
 
-    opt_gravity_rot:    true
+    opt_gravity_rot:    false
     prior_gravity_roll:  0.00
     prior_gravity_pitch: 0.00
 

@@ -87,24 +87,24 @@ msg_timeout:
 Factor_graph:
     LOG_NAME: TGYRO
 
+    # PRI_VICON_POS_COV: 0.14
+    # PRI_VICON_VEL_COV: 0.07
+
     PRI_VICON_POS_COV: 0.001
     PRI_VICON_VEL_COV: 0.001
 
-    # PRI_VICON_POS_COV: 0.001
-    # PRI_VICON_VEL_COV: 0.001
-
-    CONTROL_P_COV_X:   0.25
-    CONTROL_PF_COV_X:  0.05
-    CONTROL_P_COV_Y:   0.25
-    CONTROL_PF_COV_Y:  0.05
+    CONTROL_P_COV_X:   0.15
+    CONTROL_PF_COV_X:  0.03
+    CONTROL_P_COV_Y:   0.15
+    CONTROL_PF_COV_Y:  0.03
     CONTROL_P_COV_Z:   0.20
-    CONTROL_PF_COV_Z:  0.05
+    CONTROL_PF_COV_Z:  0.03
 
     CONTROL_R3_COV:    0.03
-    CONTROL_R2_COV:    0.7
-    CONTROL_R1_COV:    0.7
+    CONTROL_R2_COV:    0.4
+    CONTROL_R1_COV:    0.4
 
-    CONTROL_V_COV:     6.0
+    CONTROL_V_COV:     1.3
     DYNAMIC_P_COV:     0.0001
     DYNAMIC_R_COV:     0.0001
     DYNAMIC_V_COV:     0.0001
@@ -122,9 +122,9 @@ Factor_graph:
     CLF_ALPHA:         1
 
     POS_MEAS_MEAN:  0.001
-    POS_MEAS_COV:   0.08
-    VEL_MEAS_COV:   0.07
-    ROT_MEAS_COV:   0.01
+    POS_MEAS_COV:   0.001
+    VEL_MEAS_COV:   0.001
+    ROT_MEAS_COV:   0.001
 
     PRIOR_POS_MEAS_COV:   0.001 # 0.05
     PRIOR_VEL_MEAS_COV:   0.001

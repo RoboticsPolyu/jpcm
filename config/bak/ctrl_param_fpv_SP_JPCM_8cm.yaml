@@ -1,5 +1,5 @@
 #########################################################################
-# ⭐⭐⭐         MPC under accurate positioning                 ⭐⭐⭐ #
+# ⭐⭐⭐  Set parameters carefully for satisfied performance!   ⭐⭐⭐ #
 #########################################################################
 
 mass        : 0.979 # kg 
@@ -84,37 +84,27 @@ msg_timeout:
     imu:  0.5
     bat:  0.5
 
-# VICON in IMU
-qw: 0.9995765
-qx: 0.0111545
-qy: -0.0212204
-qz: -0.0164938
-
-x: -0.0147499837733
-y: 0.00272349349494
-z: -0.0106913068398
-
 Factor_graph:
     LOG_NAME: TGYRO
 
-    # PRI_VICON_POS_COV: 0.14
-    # PRI_VICON_VEL_COV: 0.07
+    PRI_VICON_POS_COV: 0.08
+    PRI_VICON_VEL_COV: 0.07
 
-    PRI_VICON_POS_COV: 0.001
-    PRI_VICON_VEL_COV: 0.001
+    # PRI_VICON_POS_COV: 0.001
+    # PRI_VICON_VEL_COV: 0.001
 
     CONTROL_P_COV_X:   0.15
-    CONTROL_PF_COV_X:  0.03
+    CONTROL_PF_COV_X:  0.05
     CONTROL_P_COV_Y:   0.15
-    CONTROL_PF_COV_Y:  0.03
+    CONTROL_PF_COV_Y:  0.05
     CONTROL_P_COV_Z:   0.20
-    CONTROL_PF_COV_Z:  0.03
+    CONTROL_PF_COV_Z:  0.05
 
     CONTROL_R3_COV:    0.03
-    CONTROL_R2_COV:    0.4
-    CONTROL_R1_COV:    0.4
+    CONTROL_R2_COV:    1.2
+    CONTROL_R1_COV:    1.2
 
-    CONTROL_V_COV:     1.3
+    CONTROL_V_COV:     6.0
     DYNAMIC_P_COV:     0.0001
     DYNAMIC_R_COV:     0.0001
     DYNAMIC_V_COV:     0.0001
@@ -132,9 +122,9 @@ Factor_graph:
     CLF_ALPHA:         1
 
     POS_MEAS_MEAN:  0.001
-    POS_MEAS_COV:   0.001
-    VEL_MEAS_COV:   0.001
-    ROT_MEAS_COV:   0.001
+    POS_MEAS_COV:   0.08
+    VEL_MEAS_COV:   0.07
+    ROT_MEAS_COV:   0.01
 
     PRIOR_POS_MEAS_COV:   0.001 # 0.05
     PRIOR_VEL_MEAS_COV:   0.001

@@ -1,12 +1,10 @@
 <launch>
 
 	<node pkg="px4ctrl" type="test_fusion" name="test_fusion" output="screen">
-		
-		<remap from="~odom" to="/vicon/odom" />
-		
-		<remap from="~acc" to="/vrpn_client_node/Quad13_ipn/accel" />
-		
-		<remap from="~cmd" to="/position_cmd" />
+
+		<param name="body_pose_topic"   type="string" value="/vicon/odom"/>
+		<param name="imu_data_topic"    type="string" value="/camera/imu"/>
+		<param name="extri_params_file" type="string" value="/home/amov/Fast250/src/px4ctrl/config/extrinsic.yaml"/>
 
         <rosparam command="load" file="$(find px4ctrl)/config/fusion.yaml" />
 	</node>

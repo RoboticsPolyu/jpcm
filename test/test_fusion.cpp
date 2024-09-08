@@ -1,6 +1,7 @@
 #include <ros/ros.h>
 #include "PX4CtrlFSM.h"
 #include <signal.h>
+#include <yaml-cpp/yaml.h>
 
 #define PI 3.14159
 
@@ -30,12 +31,50 @@ int main(int argc, char *argv[])
 
     DFBControl controller(param);
     // buildJPCMFG controller(param);
+    std::string body_pose_topic = "odom";
+    std::string imu_data_topic  = "imu";
+    std::string extrinsic_name  = "extrinsic.yaml";  
+
+    nh.getParam("body_pose_topic",   body_pose_topic);
+    nh.getParam("imu_data_topic",    imu_data_topic);
+    nh.getParam("extri_params_file", extrinsic_name);
+    
+    ros::Subscriber pose_sub, twist_sub;
+    ros::Publisher  odom_pub, mav_odom_pub;
+    
+    YAML::Node config = YAML::LoadFile(extrinsic_name);  
+    gtsam::Pose3 body_P_vicon;
+    double qw = config["body_P_vicon"]["qw"].as<double>();
+    double qx = config["body_P_vicon"]["qx"].as<double>();
+    double qy = config["body_P_vicon"]["qy"].as<double>();
+    double qz = config["body_P_vicon"]["qz"].as<double>();
+    double x  = config["body_P_vicon"]["x" ].as<double>();
+    double y  = config["body_P_vicon"]["y" ].as<double>();
+    double z  = config["body_P_vicon"]["z" ].as<double>();
+    body_P_vicon = gtsam::Pose3(gtsam::Rot3(gtsam::Quaternion(qw, qx, qy, qz)), 
+        gtsam::Point3(x, y, z)); // qw qx qy qz, x, y, z
+
+    gtsam::Pose3 t265_P_vicon;
+    qw = config["t265_P_vicon"]["qw"].as<double>();
+    qx = config["t265_P_vicon"]["qx"].as<double>();
+    qy = config["t265_P_vicon"]["qy"].as<double>();
+    qz = config["t265_P_vicon"]["qz"].as<double>();
+    x  = config["t265_P_vicon"]["x" ].as<double>();
+    y  = config["t265_P_vicon"]["y" ].as<double>();
+    z  = config["t265_P_vicon"]["z" ].as<double>();
+    t265_P_vicon = gtsam::Pose3(gtsam::Rot3(gtsam::Quaternion(qw, qx, qy, qz)), 
+        gtsam::Point3(x, y, z)); // qw qx qy qz, x, y, z
+    gtsam::Pose3 body_P_265 = body_P_vicon* t265_P_vicon.inverse();
+
+    std::cout << "body_P_265: \n";
+    body_P_265.print();
+
 
     Odom_Data_t odom_data, odom_data_noise;
 	Imu_Data_t  imu_raw_data, imu_raw_data_b;
 
     ros::Subscriber odom_sub =
-        nh.subscribe<nav_msgs::Odometry>("odom",
+        nh.subscribe<nav_msgs::Odometry>(body_pose_topic,
                                          100,
                                          boost::bind(&Odom_Data_t::feed, &odom_data, _1),
                                          ros::VoidConstPtr(),
@@ -43,7 +82,7 @@ int main(int argc, char *argv[])
 
     ros::Subscriber imu_raw_sub =
         // nh.subscribe<sensor_msgs::Imu>("/mavros/imu/data_raw",
-        nh.subscribe<sensor_msgs::Imu>("/camera/imu",
+        nh.subscribe<sensor_msgs::Imu>(imu_data_topic,
                                        100,
                                        boost::bind(&Imu_Data_t::feed, &imu_raw_data, _1),
                                        ros::VoidConstPtr(),
@@ -80,14 +119,9 @@ int main(int argc, char *argv[])
                 std::cout << "odom_noise_vel: " << odom_data_noise.v.transpose() << std::endl;
             }            
 
-            
-            imu_raw_data_b.w.x() = imu_raw_data.w.z();
-            imu_raw_data_b.w.y() = imu_raw_data.w.x();
-            imu_raw_data_b.w.z() = imu_raw_data.w.y();
-            
-            imu_raw_data_b.a.x() = imu_raw_data.a.z();
-            imu_raw_data_b.a.y() = imu_raw_data.a.x();
-            imu_raw_data_b.a.z() = imu_raw_data.a.y();
+            std::pair<Vector3, Vector3> corrected_imu = UAVFactor::correctMeasurementsBySensorPose(imu_raw_data.a, imu_raw_data.w, body_P_265, boost::none, boost::none, boost::none);
+            imu_raw_data_b.a = corrected_imu.first;
+            imu_raw_data_b.w = corrected_imu.second;
 
             controller.fusion(odom_data_noise, imu_raw_data_b, odom_data);
         }

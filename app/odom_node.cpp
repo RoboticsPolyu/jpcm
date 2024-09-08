@@ -9,7 +9,7 @@
 #include "PX4CtrlFSM.h"
 
 
-gtsam::Pose3                imu_T_vicon;
+gtsam::Pose3                body_P_vicon;
 geometry_msgs::PoseStamped  rev_pose_msg;
 geometry_msgs::PoseStamped  send_mav_pos_msg;
 geometry_msgs::TwistStamped rev_twist_msg;
@@ -114,23 +114,23 @@ int main(int argc, char *argv[])
     ros::Publisher  odom_pub, mav_odom_pub;
     
     YAML::Node config = YAML::LoadFile(extrinsic_name);  
-    double qw = config["qw"].as<double>();
-    double qx = config["qx"].as<double>();
-    double qy = config["qy"].as<double>();
-    double qz = config["qz"].as<double>();
-    double x  = config["x"].as<double>();
-    double y  = config["y"].as<double>();
-    double z  = config["z"].as<double>();
+    double qw = config["body_P_vicon"]["qw"].as<double>();
+    double qx = config["body_P_vicon"]["qx"].as<double>();
+    double qy = config["body_P_vicon"]["qy"].as<double>();
+    double qz = config["body_P_vicon"]["qz"].as<double>();
+    double x  = config["body_P_vicon"]["x" ].as<double>();
+    double y  = config["body_P_vicon"]["y" ].as<double>();
+    double z  = config["body_P_vicon"]["z" ].as<double>();
 
-    imu_T_vicon = gtsam::Pose3(gtsam::Rot3(gtsam::Quaternion(qw, qx, qy, qz)), 
+    body_P_vicon = gtsam::Pose3(gtsam::Rot3(gtsam::Quaternion(qw, qx, qy, qz)), 
         gtsam::Point3(x, y, z)); // qw qx qy qz, x, y, z
-    std::cout << "imu_T_vicon: \n";
-    imu_T_vicon.print();
+    std::cout << "body_P_vicon: \n";
+    body_P_vicon.print();
 
     odom_pub     = nh.advertise<nav_msgs::Odometry>         (odom_pub_topic,  100);
     mav_odom_pub = nh.advertise<geometry_msgs::PoseStamped> (mav_pub_topic,   100);
     pose_sub     = nh.subscribe<geometry_msgs::PoseStamped> (pose_sub_topic,  100, boost::bind(pose_callback, _1));
-    twist_sub    = nh.subscribe<geometry_msgs::TwistStamped>(twist_sub_topic, 100, boost::bind(twist_callback, _1, imu_T_vicon, odom_freq, odom_pub, mav_odom_pub));
+    twist_sub    = nh.subscribe<geometry_msgs::TwistStamped>(twist_sub_topic, 100, boost::bind(twist_callback, _1, body_P_vicon, odom_freq, odom_pub, mav_odom_pub));
 
     ros::Rate r(100);
     while (ros::ok())
