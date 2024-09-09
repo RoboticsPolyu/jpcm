@@ -11,13 +11,6 @@ class buildJPCMFG
 public:
 
   buildJPCMFG(Parameter_t &param);
-
-  bool JPCM_control(const std::vector<Desired_State_t> &des, 
-                    const std::vector<Odom_Data_t>     &odom, 
-                    const std::vector<Imu_Data_t>      &imu, 
-                    gtsam::Vector4                     &input);
-      
-  Parameter_t param_;
   
   // Single-point JPCM
   void buildFactorGraph(gtsam_fg& _graph, gtsam_sols& _initial_value, 
@@ -38,10 +31,11 @@ public:
   gtsam_fg      graph_positioning_;
   gtsam::Values initial_value_positioning_;
 
-  double   dt_;
-  uint16_t opt_traj_lens_;
-  uint16_t window_lens_;
+  double         dt_;
+  uint16_t       opt_traj_lens_;
+  uint16_t       window_lens_;
   const uint16_t IDX_P_START = 100;
+  Parameter_t    param_;
 
 };
 

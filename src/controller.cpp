@@ -598,7 +598,7 @@ double Controller::computeDesiredCollectiveThrustSignal(const Eigen::Vector3d &d
   return throttle_percentage;
 }
 
-bool  Controller::estimateThrustModel(const Eigen::Vector3d &est_a, const Parameter_t &param)
+bool Controller::estimateThrustModel(const Eigen::Vector3d &est_a, const Parameter_t &param)
 {
   ros::Time t_now = ros::Time::now();
   while (timed_thrust_.size() >= 1)
