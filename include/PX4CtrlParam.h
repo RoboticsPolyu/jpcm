@@ -126,7 +126,8 @@ public:
 		double prior_gyro_sigma;
 
 		bool opt_gravity_rot;
-		
+		bool use_vel;
+		bool use_rot;
 	};
 
 	Gain gain;

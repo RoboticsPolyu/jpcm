@@ -8,10 +8,10 @@ pose_solver : 1     # 0:From ZhepeiWang (drag & less singular) 1:From ZhepeiWang
 ctrl_freq_max    : 100.0
 use_bodyrate_ctrl: true
 max_manual_vel   : 1.0
-max_angle: 30  # Attitude angle limit in degree. A negative value means no limit.
+max_angle: 80  # Attitude angle limit in degree. A negative value means no limit.
 low_voltage: 13.2 # 4S battery
 odom_freq: 100
-ctrl_mode: 2 
+ctrl_mode: 2 # DFBC 1 MPC 2 JPCM 3
 
 rc_reverse: # *
     roll: false
@@ -134,7 +134,7 @@ Factor_graph:
     # ROT_MEAS_COV:   0.001
 
     OPT_LENS_TRAJ: 3
-    WINDOW_SIZE:   10
+    WINDOW_SIZE:   5
 
     # POS_MEAS_MEAN:  0.00
     # POS_MEAS_COV:   0.20 # 0.05
@@ -148,7 +148,7 @@ Factor_graph:
     POS_MEAS_MEAN:      0.000
     POS_MEAS_COV:       0.500 # 0.05
     VEL_MEAS_COV:       0.050
-    ROT_MEAS_COV:       0.001
+    ROT_MEAS_COV:       0.100
     
     PRIOR_POS_MEAS_COV: 0.500 # 0.05
     PRIOR_VEL_MEAS_COV: 1.000
@@ -185,6 +185,6 @@ Factor_graph:
     prior_gravity_roll:  0.00
     prior_gravity_pitch: 0.00
 
-    use_vel: false
-    # DFBC 1 MPC 2 JPCM 3
+    use_vel:            false
+    use_rot:            true
 

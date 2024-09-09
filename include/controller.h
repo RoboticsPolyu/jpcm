@@ -21,17 +21,17 @@
 #include "type.h"
 
 
-class DFBControl
+class Controller
 {
 public:
 
   using Dist_Dou = std::normal_distribution<double>;
 
-  DFBControl(Parameter_t &);
+  Controller(Parameter_t &);
   
-  ~DFBControl();
+  ~Controller();
 
-  quadrotor_msgs::Px4ctrlDebug fusion(const Odom_Data_t &odom, const Imu_Data_t &imu_raw, const Odom_Data_t &GT);
+  quadrotor_msgs::Px4ctrlDebug fusion(const Odom_Data_t &odom, const Imu_Data_t &imu_raw, const Odom_Data_t &GT, gtsam::Pose3& fus_pose, gtsam::Vector3& fus_vel, gtsam::Vector3& fus_w);
   
   bool initializeState(const std::vector<Imu_Data_t> &imu_raw, const std::vector<Odom_Data_t> &fakeGPS, gtsam::Vector3 &init_vel, gtsam::Vector6 &init_bias);
 

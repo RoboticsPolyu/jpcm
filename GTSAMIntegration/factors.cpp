@@ -1,6 +1,6 @@
 #include "factors.h"
 
-namespace UAVFactor
+namespace uavfactor
 {
    //------------------------------------------------------------------------------
    std::pair<Vector3, Vector3> correctMeasurementsBySensorPose(

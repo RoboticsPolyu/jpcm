@@ -110,20 +110,20 @@ target_link_libraries(test_jpcm
   ${YAML_CPP_LIBRARIES}
 )
 
-add_executable(test_fusion  
+add_executable(FakeGPS_IMU_fusion_node
+  app/FakeGPS_IMU_fusion_node.cpp  
   GTSAMIntegration/factors.cpp
   GTSAMIntegration/GTSAMUtils.cpp
   GTSAMIntegration/JPCM.cpp
   GTSAMIntegration/Marginalization.cpp    
-  test/test_fusion.cpp
   src/controller.cpp
   src/PX4CtrlParam.cpp
   src/input.cpp
 )
 
-add_dependencies(test_fusion quadrotor_msgs geometry_msgs)
+add_dependencies(FakeGPS_IMU_fusion_node quadrotor_msgs geometry_msgs)
 
-target_link_libraries(test_fusion
+target_link_libraries(FakeGPS_IMU_fusion_node
   ${catkin_LIBRARIES}
   gtsam
   gtsam_unstable

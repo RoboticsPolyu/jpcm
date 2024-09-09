@@ -6,7 +6,7 @@
 using namespace gtsam;
 using namespace std;
 using namespace dmvio;
-using namespace UAVFactor;
+using namespace uavfactor;
 
 
 using symbol_shorthand::B;
@@ -20,9 +20,9 @@ using symbol_shorthand::R;
 
 buildJPCMFG::buildJPCMFG(Parameter_t &param) : param_(param)
 {
-    dt_            = 0.01f; 
-    opt_traj_lens_ = param_.factor_graph.OPT_LENS_TRAJ;
-    window_lens_   = param_.factor_graph.WINDOW_SIZE;
+  dt_            = 0.01f; 
+  opt_traj_lens_ = param_.factor_graph.OPT_LENS_TRAJ;
+  window_lens_   = param_.factor_graph.WINDOW_SIZE;
 }
 
 
@@ -69,7 +69,9 @@ void buildJPCMFG::buildFusionFG(gtsam_fg&  _graph,
   // GPS noise
   auto noise_model_gps   = noiseModel::Isotropic::Sigma(3, param_.factor_graph.POS_MEAS_COV);
   auto vel_noise         = noiseModel::Isotropic::Sigma(3, param_.factor_graph.VEL_MEAS_COV);
-  // gtsam::GPSFactor gps_factor(X(correction_count), Point3(gps(0), gps(1), gps(2)), noise_model_gps);
+  auto vicon_noise       = noiseModel::Diagonal::Sigmas(
+    (Vector(6) << Vector3::Constant(param_.factor_graph.ROT_MEAS_COV), Vector3::Constant(param_.factor_graph.POS_MEAS_COV)).finished());
+
   // gtsam_imuBi prior_bias(init_bias_);
   gtsam_imuBi prior_bias(gtsam::Vector3(0.12, -0.07, 0), gtsam::Vector3(0, 0, -0.004)); //!!!
   if(state_idx == 0) 
@@ -82,7 +84,7 @@ void buildJPCMFG::buildFusionFG(gtsam_fg&  _graph,
 
       if(idx != state_idx)
       {
-        // float __dt = (odom_v[idx - state_idx].rcv_stamp - odom_v[idx - state_idx - 1].rcv_stamp).toSec();
+        float __dt = (odom_v[idx - state_idx].rcv_stamp - odom_v[idx - state_idx - 1].rcv_stamp).toSec();
         if(!param_.factor_graph.opt_gravity_rot)
         {
           graph_positioning_.add(IMUFactor(X(idx-1+IDX_P_START), V(idx-1+IDX_P_START), B(idx-1+IDX_P_START), X(idx+IDX_P_START), V(idx+IDX_P_START), dt, 
@@ -125,8 +127,8 @@ void buildJPCMFG::buildFusionFG(gtsam_fg&  _graph,
 
     _graph = graph_positioning_;
 
-    std::cout << "Build first factor graph" << std::endl;
-    _graph.print();
+    // std::cout << "Build first factor graph" << std::endl;
+    // _graph.print();
 
   }
   else
@@ -145,8 +147,15 @@ void buildJPCMFG::buildFusionFG(gtsam_fg&  _graph,
     gtsam::Rot3 rot = gtsam::Rot3(odom_v[window_lens_-1].q);
     gtsam::Pose3 pose(rot, odom_v[window_lens_-1].p);
 
-    // graph_positioning_.add(gtsam::PriorFactor<gtsam::Pose3>  (X(idx), pose, vicon_noise));
-    graph_positioning_.add(gtsam::GPSFactor(X(idx), odom_v[window_lens_-1].p, noise_model_gps)); 
+    if(param_.factor_graph.use_rot)
+    {
+      graph_positioning_.add(gtsam::PriorFactor<gtsam::Pose3>(X(idx), pose, vicon_noise));
+    }
+    else
+    {
+      graph_positioning_.add(gtsam::GPSFactor(X(idx), odom_v[window_lens_-1].p, noise_model_gps)); 
+    }
+
     float __dt = (odom_v[window_lens_-1].rcv_stamp - odom_v[window_lens_-2].rcv_stamp).toSec();
     std::cout << "__dt is : " << __dt << std::endl;
     // graph_positioning_.add(gtsam::PriorFactor<gtsam::Vector3>(V(idx), odom_v[window_lens_-1].v, vel_noise)); 
@@ -175,8 +184,8 @@ void buildJPCMFG::buildFusionFG(gtsam_fg&  _graph,
 
     _graph = graph_positioning_;
   
-    std::cout << "Updated graph" << std::endl;
-    _graph.print();
+    // std::cout << "Updated graph" << std::endl;
+    // _graph.print();
 
   }
   state_idx++;

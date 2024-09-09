@@ -47,7 +47,7 @@ public:
 	Battery_Data_t bat_data;
 	Takeoff_Land_Data_t takeoff_land_data;
 
-	DFBControl &controller;
+	Controller &controller;
 	// buildJPCMFG &controller;
 
 	ros::Publisher traj_start_trig_pub;
@@ -71,7 +71,7 @@ public:
 		AUTO_LAND
 	};
 
-	PX4CtrlFSM(Parameter_t &, DFBControl &);
+	PX4CtrlFSM(Parameter_t &, Controller &);
 	
 	void process();
 	bool rc_is_received(const ros::Time &now_time);

@@ -6,7 +6,7 @@
 
 using namespace gtsam_wrapper;
 
-namespace UAVFactor
+namespace uavfactor
 {
 
 //------------------------------------------------------------------------------

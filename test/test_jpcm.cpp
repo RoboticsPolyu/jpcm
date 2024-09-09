@@ -36,7 +36,7 @@ int main(int argc, char *argv[])
     rot   = gtsam::Rot3::identity();
     des.q = rot.toQuaternion();
 
-    DFBControl controller(param);
+    Controller controller(param);
     Controller_Output_t ctrl_cmd;
     CTRL_MODE MPC = CTRL_MODE::MPC;
 
