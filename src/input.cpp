@@ -154,7 +154,7 @@ void Odom_Data_t::feed(nav_msgs::OdometryConstPtr pMsg)
     static ros::Time last_clear_count_time = ros::Time(0.0);
     if ( (now - last_clear_count_time).toSec() > 1.0 )
     {
-        if ( one_min_count < 100 )
+        if ( one_min_count < 90 )
         {
             ROS_WARN("ODOM frequency seems lower than 100Hz, which is too low!");
         }
@@ -327,7 +327,7 @@ void Battery_Data_t::feed(sensor_msgs::BatteryStateConstPtr pMsg)
     {
         if ((rcv_stamp - last_print_t).toSec() > 10)
         {
-            ROS_INFO("[px4ctrl] Voltage=%.3f, percentage=%.3f", volt, percentage);
+            ROS_INFO("[JPCM] Voltage=%.3f, percentage=%.3f", volt, percentage);
             last_print_t = rcv_stamp;
         }
     }
@@ -335,7 +335,7 @@ void Battery_Data_t::feed(sensor_msgs::BatteryStateConstPtr pMsg)
     {
         if ((rcv_stamp - last_print_t).toSec() > 1)
         {
-            // ROS_ERROR("[px4ctrl] Dangerous! voltage=%.3f, percentage=%.3f", volt, percentage);
+            // ROS_ERROR("[JPCM] Dangerous! voltage=%.3f, percentage=%.3f", volt, percentage);
             last_print_t = rcv_stamp;
         }
     }

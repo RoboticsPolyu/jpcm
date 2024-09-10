@@ -33,8 +33,8 @@ void buildJPCMFG::buildFactorGraph(gtsam_fg& _graph, gtsam_sols& _initial_value,
                         const std::vector<Desired_State_t> &des_seq, const std::vector<Odom_Data_t> &odom_v, 
                         const std::vector<Imu_Data_t> &imu_v, double dt, uint64_t& state_idx)
 {
-  buildFusionFG(_graph, _initial_value, odom_v, imu_v, dt, state_idx);
-  buildJoinedFG(_graph, _initial_value, des_seq, dt, state_idx);
+  buildFusionFG(_graph, _initial_value, odom_v, imu_v, dt, state_idx); // state_idx = state_idx+1
+  buildJoinedFG(_graph, _initial_value, des_seq, dt, state_idx); 
 }
 
 
@@ -104,13 +104,11 @@ void buildJPCMFG::buildFusionFG(gtsam_fg&  _graph,
       {
         graph_positioning_.add(gtsam::PriorFactor<gtsam_imuBi>   (B(idx+IDX_P_START), prior_bias, prior_bias_noise));
         graph_positioning_.add(gtsam::PriorFactor<gtsam::Pose3>  (X(idx+IDX_P_START), pose,       prior_vicon_noise)); 
-        // graph_positioning_.add(gtsam::PriorFactor<gtsam::Vector3>(V(idx+IDX_P_START), v,          prior_vel_noise)); 
       }
       else
       {
         // graph_positioning_.add(gtsam::GPSFactor(X(idx+IDX_P_START), odom_v[idx - state_idx].p, noise_model_gps)); 
         graph_positioning_.add(gtsam::PriorFactor<gtsam::Pose3>  (X(idx+IDX_P_START), pose, prior_vicon_noise)); 
-        // graph_positioning_.add(gtsam::PriorFactor<gtsam::Vector3>(V(idx+IDX_P_START), v,    prior_vel_noise)); 
       }
 
       _initial_value.insert(X(idx+IDX_P_START), pose);
@@ -127,9 +125,6 @@ void buildJPCMFG::buildFusionFG(gtsam_fg&  _graph,
 
     _graph = graph_positioning_;
 
-    // std::cout << "Build first factor graph" << std::endl;
-    // _graph.print();
-
   }
   else
   {
@@ -137,7 +132,7 @@ void buildJPCMFG::buildFusionFG(gtsam_fg&  _graph,
     keysToMarginalize.push_back(X(state_idx-1+IDX_P_START));
     keysToMarginalize.push_back(V(state_idx-1+IDX_P_START));
     keysToMarginalize.push_back(B(state_idx-1+IDX_P_START));
-    // keysToMarginalize.push_back(U(state_idx));
+
     boost::shared_ptr<gtsam_fg> margGraph;
     margGraph = marginalizeOut(graph_positioning_, _initial_value, keysToMarginalize, nullptr, true);
 
@@ -157,7 +152,7 @@ void buildJPCMFG::buildFusionFG(gtsam_fg&  _graph,
     }
 
     float __dt = (odom_v[window_lens_-1].rcv_stamp - odom_v[window_lens_-2].rcv_stamp).toSec();
-    std::cout << "__dt is : " << __dt << std::endl;
+    std::cout << " __dt is : " << __dt << std::endl;
     // graph_positioning_.add(gtsam::PriorFactor<gtsam::Vector3>(V(idx), odom_v[window_lens_-1].v, vel_noise)); 
     if(!param_.factor_graph.opt_gravity_rot)
     {
@@ -183,9 +178,6 @@ void buildJPCMFG::buildFusionFG(gtsam_fg&  _graph,
     _initial_value.insert(V(idx), pred_State.second);
 
     _graph = graph_positioning_;
-  
-    // std::cout << "Updated graph" << std::endl;
-    // _graph.print();
 
   }
   state_idx++;
@@ -213,7 +205,7 @@ void buildJPCMFG::buildJoinedFG(gtsam_fg& _graph, gtsam_sols& _initial_value,
   uint16_t begin_u = 0;
   uint16_t end_u   = opt_traj_lens_;
 
-  uint16_t latest_state_idx = state_idx + window_lens_ + IDX_P_START - 1;
+  uint16_t latest_state_idx = state_idx + window_lens_ + IDX_P_START - 2; 
   
   for (uint16_t idx = begin_u; idx < end_u; idx++)
   {
@@ -230,13 +222,17 @@ void buildJPCMFG::buildJoinedFG(gtsam_fg& _graph, gtsam_sols& _initial_value,
     
     gtsam::Pose3   pose_idx(gtsam::Rot3(des_seq[idx].q), des_seq[idx].p);
     gtsam::Vector3 vel_idx   = des_seq[idx].v;
-    // gtsam::Vector3 omega_idx = des_seq[idx].w;
-    
-    // std::cout << "Idx: " << idx << ", ref vel: " << vel_idx.transpose() << std::endl;
-    // std::cout << "ref pos: " << des_seq[idx].p.transpose() << std::endl;
 
-    _initial_value.update(X(idx + 1), pose_idx);
-    _initial_value.update(V(idx + 1), vel_idx);
+    if(state_idx == 1)
+    {
+      _initial_value.insert(X(idx + 1), pose_idx);
+      _initial_value.insert(V(idx + 1), vel_idx);
+    }
+    else
+    {
+      _initial_value.update(X(idx + 1), pose_idx);
+      _initial_value.update(V(idx + 1), vel_idx);
+    }
 
     if(idx != begin_u)
     {
@@ -245,7 +241,14 @@ void buildJPCMFG::buildJoinedFG(gtsam_fg& _graph, gtsam_sols& _initial_value,
     }
     
     gtsam::Vector4 init_input(10, 0, 0, 0);
-    _initial_value.update(U(idx), init_input);
+    if(state_idx ==1)
+    {
+      _initial_value.insert(U(idx), init_input);
+    }
+    else
+    {
+      _initial_value.update(U(idx), init_input);
+    }
 
     gtsam::Vector3 control_r_cov(param_.factor_graph.CONTROL_R1_COV, param_.factor_graph.CONTROL_R2_COV, param_.factor_graph.CONTROL_R3_COV);
     if(idx == end_u - 1)
@@ -288,7 +291,7 @@ void buildJPCMFG::buildFactorGraph(gtsam_fg& _graph, gtsam_sols& _initial_value,
   auto vel_noise   = noiseModel::Diagonal::Sigmas(Vector3(param_.factor_graph.PRI_VICON_VEL_COV, param_.factor_graph.PRI_VICON_VEL_COV, param_.factor_graph.PRI_VICON_VEL_COV));
 
   auto ref_predict_vel_noise = noiseModel::Diagonal::Sigmas(Vector3(param_.factor_graph.CONTROL_V_COV, param_.factor_graph.CONTROL_V_COV, param_.factor_graph.CONTROL_V_COV));
-  // auto ref_predict_omega_noise = noiseModel::Diagonal::Sigmas(Vector3(param_.factor_graph.CONTROL_O_COV, param_.factor_graph.CONTROL_O_COV, param_.factor_graph.CONTROL_O_COV));
+
   gtsam_fg   graph;
   gtsam_sols initial_value;
 
@@ -309,10 +312,6 @@ void buildJPCMFG::buildFactorGraph(gtsam_fg& _graph, gtsam_sols& _initial_value,
     
     gtsam::Pose3   pose_idx(gtsam::Rot3(des_seq[idx].q), des_seq[idx].p);
     gtsam::Vector3 vel_idx   = des_seq[idx].v;
-    // gtsam::Vector3 omega_idx = des_seq[idx].w;
-    
-    // std::cout << "Idx: " << idx << ", ref vel: " << vel_idx.transpose() << std::endl;
-    // std::cout << "ref pos: " << des_seq[idx].p.transpose() << std::endl;
 
     initial_value.insert(X(idx + 1), pose_idx);
     initial_value.insert(V(idx + 1), vel_idx);
@@ -346,18 +345,12 @@ void buildJPCMFG::buildFactorGraph(gtsam_fg& _graph, gtsam_sols& _initial_value,
     {              
       gtsam::Rot3 rot = gtsam::Rot3(odom.q);
       gtsam::Pose3 pose(rot, odom.p);
-
-      // std::cout << "Odom: " << idx << ", vel: " << vel_add.transpose() << std::endl;
-      // std::cout << "pos: " << pos_add.transpose() << std::endl;
       
       graph.add(gtsam::PriorFactor<gtsam::Pose3>  (X(idx), pose, vicon_noise));
       graph.add(gtsam::PriorFactor<gtsam::Vector3>(V(idx), odom.v, vel_noise));
       
       initial_value.insert(X(idx), pose);
       initial_value.insert(V(idx), odom.v);
-
-      // float distance = (des_seq[0].p - odom.p).norm();
-      // std::cout << "distance: [ " << distance << " ]" << endl;
     }
   }
 

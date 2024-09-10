@@ -83,7 +83,7 @@ bool Controller::initializeState(const std::vector<Imu_Data_t> &imu_raw, const s
   Values result = optimizer.optimize();
   end   = clock();
   std::cout << " ---------------------------------------------------- Result ----------------------------------------------------" << std::endl;
-  result.print();
+  // result.print();
   opt_cost = (double)(end - start) / CLOCKS_PER_SEC;
   std::cout << " ---------- Initialization Time: [ " << opt_cost << " ] " << endl;
 
@@ -129,7 +129,6 @@ quadrotor_msgs::Px4ctrlDebug Controller::fusion(const Odom_Data_t &odom, const I
     parameters.verbosity        = gtsam::NonlinearOptimizerParams::SILENT;
     parameters.verbosityLM      = gtsam::LevenbergMarquardtParams::SILENT;
 
-    std::cout << " -- <  Fusion Test > -- " << std::endl;
     FGbuilder->buildFusionFG(graph_, initial_value_, odom_data_noise_, imu_data_v_, dt_, state_idx_);
     LevenbergMarquardtOptimizer optimizer(graph_, initial_value_, parameters);
     start = clock();
@@ -137,7 +136,7 @@ quadrotor_msgs::Px4ctrlDebug Controller::fusion(const Odom_Data_t &odom, const I
     end   = clock();
     initial_value_ = result; 
     std::cout << " ---------------------------------------------------- Result ----------------------------------------------------" << std::endl;
-    result.print();
+    // result.print();
     opt_cost = (double)(end - start) / CLOCKS_PER_SEC;
     std::cout << " ---------- Optimize Time: [ " << opt_cost << " ] " << endl;
   
@@ -215,7 +214,6 @@ quadrotor_msgs::Px4ctrlDebug Controller::calculateControl(const Desired_State_t 
   Controller_Output_t &thr_bodyrate_u, CTRL_MODE mode_switch)
 {
   odom_data_v_.push_back(odom);
-  Odom_Data_t GT = odom;
   Odom_Data_t odom_noise = add_Guassian_noise(odom);
 
   odom_data_noise_.push_back(odom_noise);
@@ -243,7 +241,7 @@ quadrotor_msgs::Px4ctrlDebug Controller::calculateControl(const Desired_State_t 
     parameters.verbosity        = gtsam::NonlinearOptimizerParams::SILENT;
     parameters.verbosityLM      = gtsam::LevenbergMarquardtParams::SILENT;
 
-    std::cout << " - JMPC - " << std::endl;
+    std::cout << " - JPCM Opt - " << std::endl;
     FGbuilder->buildFactorGraph(graph_, initial_value_, des_data_v_, odom_data_noise_, imu_data_v_, dt_, state_idx_);
     LevenbergMarquardtOptimizer optimizer(graph_, initial_value_, parameters);
     start = clock();
@@ -267,9 +265,12 @@ quadrotor_msgs::Px4ctrlDebug Controller::calculateControl(const Desired_State_t 
     uint16_t    idx =  window_lens_ + state_idx_ - 2 + IDX_P_START;
     gtsam::Pose3   pose;
     gtsam::Vector3 vel;
+    gtsam_imuBi imu_bias;
 
     pose = result.at<Pose3>(X(idx));
     vel  = result.at<Vector3>(V(idx));
+    imu_bias = result.at<gtsam_imuBi>(B(idx));
+
     gtsam::Vector3 eular_xyz = pose.rotation().rpy();
     gtsam::Vector3 gt_eular_xyz = gtsam::Rot3(odom.q).rpy();
     gtsam::Vector3 des_eular_xyz = gtsam::Rot3(des_data_v_[0].q).rpy();
@@ -277,28 +278,42 @@ quadrotor_msgs::Px4ctrlDebug Controller::calculateControl(const Desired_State_t 
 
     std::cout << " ---------- Optimize Time: [ " << opt_cost << " ], " << "ori distance: [ " << distance << " ], est distance: [" << distance_est << " ]" << endl;
 
-    log_ << std::setprecision(19) << des_data_v_[0].rcv_stamp.toSec() <<  " " << des_data_v_.size() << " "
+    log_ << std::setprecision(19) 
+      // Des info 
+      << des_data_v_[0].rcv_stamp.toSec() <<  " "
       << des_data_v_[0].p.x() << " " << des_data_v_[0].p.y() << " " << des_data_v_[0].p.z() << " "
       << des_data_v_[0].v.x() << " " << des_data_v_[0].v.y() << " " << des_data_v_[0].v.z() << " "
-      << des_eular_xyz.x() << " " << des_eular_xyz.y() << " " << des_eular_xyz.z() << " "
+      << des_eular_xyz.x()    << " " << des_eular_xyz.y()    << " " << des_eular_xyz.z()    << " "
       
-      << GT.p.x() << " " << GT.p.y() << " " << GT.p.z() << " "
+      // Positioning GT Info
+      << odom.p.x()       << " " << odom.p.y()       << " " << odom.p.z()       << " "
       << gt_eular_xyz.x() << " " << gt_eular_xyz.y() << " " << gt_eular_xyz.z() << " "
-      << GT.v.x() << " " << GT.v.y() << " " << GT.v.z() << " "
+      << odom.v.x()       << " " << odom.v.y()       << " " << odom.v.z()       << " "
       
+      // Positioning with Noise
       << odom_noise.p.x() << " " << odom_noise.p.y() << " " << odom_noise.p.z() << " " 
       << odom_noise.v.x() << " " << odom_noise.v.y() << " " << odom_noise.v.z() << " "
       
+      // Positioning Estimation
       << pose.translation().x() << " " << pose.translation().y() << " " << pose.translation().z() << " "
-      << vel.x() << " " << vel.y() << " " << vel.z() << " "
-      << eular_xyz.x() << " " << eular_xyz.y() << " " << eular_xyz.z() << " "
+      << vel.x()                << " " << vel.y()                << " " << vel.z()                << " "
+      << eular_xyz.x()          << " " << eular_xyz.y()          << " " << eular_xyz.z()          << " "
       
-      << thrust2   << " " 
-      << bodyrates2.x() << " " << bodyrates2.y() << " " << bodyrates2.z() << " " // MPC
-      << opt_cost  << " "
+      // Time cost
+      << opt_cost << " "
 
-      << imu.w.x() << " " << imu.w.y() << " " << imu.w.z() << " "
-      << imu.a.x() << " " << imu.a.y() << " " << imu.a.z() << " "
+      // IMU Raw Data
+      << imu_raw.w.x() << " " << imu_raw.w.y() << " " << imu_raw.w.z() << " "
+      << imu_raw.a.x() << " " << imu_raw.a.y() << " " << imu_raw.a.z() << " "
+
+      // Bias
+      << imu_bias.accelerometer().x() << " " << imu_bias.accelerometer().y() << " " << imu_bias.accelerometer().z() << " "
+      << imu_bias.gyroscope().x()     << " " << imu_bias.gyroscope().y()     << " " << imu_bias.gyroscope().z()     << " "
+      
+      // Control
+      << thrust2 << " " 
+      << bodyrates2.x() << " " << bodyrates2.y() << " " << bodyrates2.z() << " " // MPC
+
       << std::endl;
   }
 
@@ -327,13 +342,15 @@ quadrotor_msgs::Px4ctrlDebug Controller::calculateControl(const Desired_State_t 
 }
 
 /* 
- * Single-point JPCM 
+ * Single-point (SP) JPCM 
  */
-quadrotor_msgs::Px4ctrlDebug Controller::calculateControl(const Desired_State_t &des, const Odom_Data_t &odom, const Imu_Data_t &imu, 
+quadrotor_msgs::Px4ctrlDebug Controller::calculateControl(const Desired_State_t &des, const Odom_Data_t &GT, const Odom_Data_t &odom, const Imu_Data_t &imu, 
   Controller_Output_t &thr_bodyrate_u, CTRL_MODE mode_switch)
 {
-  Odom_Data_t odom_noise = add_Guassian_noise(odom);
-  gtsam::Vector3 gt_rxyz = gtsam::Rot3(odom.q).rpy();
+  // Odom_Data_t odom_noise = add_Guassian_noise(odom);
+  Odom_Data_t odom_noise = odom;
+  
+  gtsam::Vector3 gt_rxyz = gtsam::Rot3(GT.q).rpy();
 
   bool   timeout  = false;
   double opt_cost = 0.0f;
@@ -401,9 +418,9 @@ quadrotor_msgs::Px4ctrlDebug Controller::calculateControl(const Desired_State_t 
       << des_eular_xyz.x()    << " " << des_eular_xyz.y()    << " " << des_eular_xyz.z()    << " "
 
       // Positioning GT Info
-      << odom.p.x()  << " " << odom.p.y()  << " " << odom.p.z()  << " "
+      << GT.p.x()    << " " << GT.p.y()    << " " << GT.p.z()    << " "
       << gt_rxyz.x() << " " << gt_rxyz.y() << " " << gt_rxyz.z() << " "
-      << odom.v.x()  << " " << odom.v.y()  << " " << odom.v.z()  << " "
+      << GT.v.x()    << " " << GT.v.y()    << " " << GT.v.z()    << " "
 
       // Positioning with Noise
       << odom_noise.p.x() << " " << odom_noise.p.y() << " " << odom_noise.p.z() << " " 

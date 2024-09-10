@@ -38,6 +38,7 @@ public:
 	State_Data_t state_data;
 	ExtendedState_Data_t extended_state_data;
 	Odom_Data_t          odom_data;
+	Odom_Data_t          GT;
 	Imu_Data_t           imu_data;
 	Imu_Data_t           imu_raw_data;
 	Acc_Data_t           acc_data; // linear acc
@@ -64,9 +65,9 @@ public:
 
 	enum State_t
 	{
-		MANUAL_CTRL = 1, // px4ctrl is deactived. FCU is controled by the remote controller only
-		AUTO_HOVER, // px4ctrl is actived, it will keep the drone hover from odom measurments while waiting for commands from PositionCommand topic.
-		CMD_CTRL,	// px4ctrl is actived, and controling the drone.
+		MANUAL_CTRL = 1, // JPCM is deactived. FCU is controled by the remote controller only
+		AUTO_HOVER, // JPCM is actived, it will keep the drone hover from odom measurments while waiting for commands from PositionCommand topic.
+		CMD_CTRL,	// JPCM is actived, and controling the drone.
 		AUTO_TAKEOFF,
 		AUTO_LAND
 	};

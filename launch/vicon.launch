@@ -1,6 +1,6 @@
 <launch>
 
-	<node pkg="px4ctrl" type="odom_node" name="odom" output="screen">
+	<node pkg="jpcm" type="odom_node" name="odom" output="screen">
         <!-- <remap from="~odom" to="/vicon_imu_ekf_odom" /> -->
 			
 		<!-- <remap from="~odom" to="/vins_fusion/imu_propagate" /> -->
@@ -11,11 +11,11 @@
 		<param name="vicon_acc_topic"   type="string" value="/vrpn_client_node/Quad13_ipn/accel"/>
 		<param name="mav_pose_topic"    type="string" value="/mavros/vision_pose/pose"/>
 
-		<param name="extri_params_file" type="string" value="/home/amov/Fast250/src/px4ctrl/config/extrinsic.yaml"/>
+		<param name="extri_params_file" type="string" value="/home/amov/Fast250/src/jpcm/config/extrinsic.yaml"/>
 		
         <remap from="~odom" to="/vicon/odom" />
 		<remap from="~cmd" to="/position_cmd" />
-        <rosparam command="load" file="$(find px4ctrl)/config/ctrl_param_fpv.yaml" />
+        <rosparam command="load" file="$(find jpcm)/config/ctrl_param_fpv.yaml" />
 	</node>
  
 </launch>

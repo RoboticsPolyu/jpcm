@@ -4,6 +4,12 @@
 #include <signal.h>
 #include <yaml-cpp/yaml.h>
 
+/*
+ * FakeGPS 100Hz
+ * IMU
+ * Rotation constraint
+ */
+
 void mySigintHandler(int sig)
 {
     ROS_INFO("[FakeGPS_IMU_fusion] exit...");
@@ -84,8 +90,6 @@ int main(int argc, char *argv[])
     ros::Rate r(param.ctrl_freq_max);
     while (ros::ok())
     {
-        r.sleep();
-        ros::spinOnce();
         if(odom_data.recv_new_msg)
         {
             odom_data.recv_new_msg = false;
@@ -110,6 +114,8 @@ int main(int argc, char *argv[])
             send_odom_msg.twist.twist.angular.z = fus_w.z();
             odom_pub.publish(send_odom_msg);
         }
+        r.sleep();
+        ros::spinOnce();
     }
 
     return 0;

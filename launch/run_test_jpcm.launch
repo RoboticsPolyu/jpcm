@@ -1,7 +1,7 @@
 <launch>
 
-	<node pkg="px4ctrl" type="test_jpcm" name="test_jpcm" output="screen">
-        <rosparam command="load" file="$(find px4ctrl)/config/ctrl_param_fpv.yaml" />
+	<node pkg="jpcm" type="test_jpcm" name="test_jpcm" output="screen">
+        <rosparam command="load" file="$(find jpcm)/config/ctrl_param_fpv.yaml" />
 	</node>
  
 </launch>

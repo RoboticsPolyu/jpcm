@@ -35,11 +35,14 @@ public:
   
   bool initializeState(const std::vector<Imu_Data_t> &imu_raw, const std::vector<Odom_Data_t> &fakeGPS, gtsam::Vector3 &init_vel, gtsam::Vector6 &init_bias);
 
+  // DFBC
   quadrotor_msgs::Px4ctrlDebug calculateControl(const Desired_State_t &des, const Odom_Data_t &odom, const Imu_Data_t &imu, Controller_Output_t &thr_bodyrate_u);
 
-  quadrotor_msgs::Px4ctrlDebug calculateControl(const Desired_State_t &des, const Odom_Data_t &odom, const Imu_Data_t &imu, 
+  // SP-MPC
+  quadrotor_msgs::Px4ctrlDebug calculateControl(const Desired_State_t &des, const Odom_Data_t &GT, const Odom_Data_t &odom, const Imu_Data_t &imu, 
     Controller_Output_t &thr_bodyrate_u, CTRL_MODE mode_switch);
 
+  // JPCM
   quadrotor_msgs::Px4ctrlDebug calculateControl(const Desired_State_t &des, const Odom_Data_t &odom, const Imu_Data_t &imu, const Imu_Data_t &imu_raw, 
     Controller_Output_t &thr_bodyrate_u, CTRL_MODE mode_switch);
   

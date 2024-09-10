@@ -95,7 +95,7 @@ class ThrustCalibration:
 
         rospack = rospkg.RosPack()
         filedir = rospack.get_path(
-            'px4ctrl')+'/thrust_calibrate_scrips/data.csv'
+            'jpcm')+'/thrust_calibrate_scrips/data.csv'
         f = open(filedir, 'a')
         writer = csv.writer(f)
         writer.writerow(((time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())),

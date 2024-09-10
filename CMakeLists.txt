@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(px4ctrl)
+project(jpcm)
 
 set(CMAKE_VERBOSE_MAKEFILE "false")
 
@@ -65,8 +65,8 @@ target_link_libraries(odom_node
   ${YAML_CPP_LIBRARIES}
 )
 
-add_executable(px4ctrl_node 
-  app/px4ctrl_node.cpp
+add_executable(JPCM_node 
+  app/JPCM_node.cpp
   src/controller.cpp
   src/input.cpp  
   src/PX4CtrlFSM.cpp
@@ -77,9 +77,9 @@ add_executable(px4ctrl_node
   GTSAMIntegration/Marginalization.cpp
 )
 
-add_dependencies(px4ctrl_node quadrotor_msgs)
+add_dependencies(JPCM_node quadrotor_msgs)
 
-target_link_libraries(px4ctrl_node
+target_link_libraries(JPCM_node
   ${catkin_LIBRARIES}
   gtsam 
   gtsam_unstable

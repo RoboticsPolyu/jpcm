@@ -77,17 +77,17 @@ void PX4CtrlFSM::process()
 		{
 			if (!odom_is_received(now_time))
 			{
-				ROS_ERROR("[px4ctrl] Reject AUTO_HOVER(L2). No odom!");
+				ROS_ERROR("[JPCM] Reject AUTO_HOVER(L2). No odom!");
 				break;
 			}
 			if (cmd_is_received(now_time))
 			{
-				ROS_ERROR("[px4ctrl] Reject AUTO_HOVER(L2). You are sending commands before toggling into AUTO_HOVER, which is not allowed. Stop sending commands now!");
+				ROS_ERROR("[JPCM] Reject AUTO_HOVER(L2). You are sending commands before toggling into AUTO_HOVER, which is not allowed. Stop sending commands now!");
 				break;
 			}
 			if (odom_data.v.norm() > 3.0)
 			{
-				ROS_ERROR("[px4ctrl] Reject AUTO_HOVER(L2). Odom_Vel=%fm/s, which seems that the locolization module goes wrong!", odom_data.v.norm());
+				ROS_ERROR("[JPCM] Reject AUTO_HOVER(L2). Odom_Vel=%fm/s, which seems that the locolization module goes wrong!", odom_data.v.norm());
 				break;
 			}
 
@@ -96,42 +96,42 @@ void PX4CtrlFSM::process()
 			set_hov_with_odom();
 			toggle_offboard_mode(true);
 
-			ROS_INFO("\033[32m[px4ctrl] MANUAL_CTRL(L1) --> AUTO_HOVER(L2)\033[32m");
+			ROS_INFO("\033[32m[JPCM] MANUAL_CTRL(L1) --> AUTO_HOVER(L2)\033[32m");
 		}
 		else if (param.takeoff_land.enable && takeoff_land_data.triggered && takeoff_land_data.takeoff_land_cmd == quadrotor_msgs::TakeoffLand::TAKEOFF) // Try to jump to AUTO_TAKEOFF
 		{
 			if (!odom_is_received(now_time))
 			{
-				ROS_ERROR("[px4ctrl] Reject AUTO_TAKEOFF. No odom!");
+				ROS_ERROR("[JPCM] Reject AUTO_TAKEOFF. No odom!");
 				break;
 			}
 			if (cmd_is_received(now_time))
 			{
-				ROS_ERROR("[px4ctrl] Reject AUTO_TAKEOFF. You are sending commands before toggling into AUTO_TAKEOFF, which is not allowed. Stop sending commands now!");
+				ROS_ERROR("[JPCM] Reject AUTO_TAKEOFF. You are sending commands before toggling into AUTO_TAKEOFF, which is not allowed. Stop sending commands now!");
 				break;
 			}
 			if (odom_data.v.norm() > 0.1)
 			{
-				ROS_ERROR("[px4ctrl] Reject AUTO_TAKEOFF. Odom_Vel=%fm/s, non-static takeoff is not allowed!", odom_data.v.norm());
+				ROS_ERROR("[JPCM] Reject AUTO_TAKEOFF. Odom_Vel=%fm/s, non-static takeoff is not allowed!", odom_data.v.norm());
 				break;
 			}
 			if (!get_landed())
 			{
-				ROS_ERROR("[px4ctrl] Reject AUTO_TAKEOFF. land detector says that the drone is not landed now!");
+				ROS_ERROR("[JPCM] Reject AUTO_TAKEOFF. land detector says that the drone is not landed now!");
 				break;
 			}
 			if (rc_is_received(now_time)) // Check this only if RC is connected.
 			{
 				if (!rc_data.is_hover_mode || !rc_data.is_command_mode || !rc_data.check_centered())
 				{
-					ROS_ERROR("[px4ctrl] Reject AUTO_TAKEOFF. If you have your RC connected, keep its switches at \"auto hover\" and \"command control\" states, and all sticks at the center, then takeoff again.");
+					ROS_ERROR("[JPCM] Reject AUTO_TAKEOFF. If you have your RC connected, keep its switches at \"auto hover\" and \"command control\" states, and all sticks at the center, then takeoff again.");
 					while (ros::ok())
 					{
 						ros::Duration(0.01).sleep();
 						ros::spinOnce();
 						if (rc_data.is_hover_mode && rc_data.is_command_mode && rc_data.check_centered())
 						{
-							ROS_INFO("\033[32m[px4ctrl] OK, you can takeoff again.\033[32m");
+							ROS_INFO("\033[32m[JPCM] OK, you can takeoff again.\033[32m");
 							break;
 						}
 					}
@@ -154,14 +154,14 @@ void PX4CtrlFSM::process()
 			}
 			takeoff_land.toggle_takeoff_land_time = now_time;
 
-			ROS_INFO("\033[32m[px4ctrl] MANUAL_CTRL(L1) --> AUTO_TAKEOFF\033[32m");
+			ROS_INFO("\033[32m[JPCM] MANUAL_CTRL(L1) --> AUTO_TAKEOFF\033[32m");
 		}
 
 		if (rc_data.toggle_reboot) // Try to reboot. EKF2 based PX4 FCU requires reboot when its state estimator goes wrong.
 		{
 			if (state_data.current_state.armed)
 			{
-				ROS_ERROR("[px4ctrl] Reject reboot! Disarm the drone first!");
+				ROS_ERROR("[JPCM] Reject reboot! Disarm the drone first!");
 				break;
 			}
 			reboot_FCU();
@@ -177,7 +177,7 @@ void PX4CtrlFSM::process()
 			state = MANUAL_CTRL;
 			toggle_offboard_mode(false);
 
-			ROS_WARN("[px4ctrl] AUTO_HOVER(L2) --> MANUAL_CTRL(L1)");
+			ROS_WARN("[JPCM] AUTO_HOVER(L2) --> MANUAL_CTRL(L1)");
 		}
 		else if (rc_data.is_command_mode && cmd_is_received(now_time))
 		{
@@ -185,7 +185,7 @@ void PX4CtrlFSM::process()
 			{
 				state = CMD_CTRL;
 				des = get_cmd_des();
-				ROS_INFO("\033[32m[px4ctrl] AUTO_HOVER(L2) --> CMD_CTRL(L3)\033[32m");
+				ROS_INFO("\033[32m[JPCM] AUTO_HOVER(L2) --> CMD_CTRL(L3)\033[32m");
 			}
 		}
 		else if (takeoff_land_data.triggered && takeoff_land_data.takeoff_land_cmd == quadrotor_msgs::TakeoffLand::LAND)
@@ -194,7 +194,7 @@ void PX4CtrlFSM::process()
 			state = AUTO_LAND;
 			set_start_pose_for_takeoff_land(odom_data);
 
-			ROS_INFO("\033[32m[px4ctrl] AUTO_HOVER(L2) --> AUTO_LAND\033[32m");
+			ROS_INFO("\033[32m[JPCM] AUTO_HOVER(L2) --> AUTO_LAND\033[32m");
 		}
 		else
 		{
@@ -205,7 +205,7 @@ void PX4CtrlFSM::process()
 			{
 				takeoff_land.delay_trigger.first = false;
 				publish_trigger(odom_data.msg);
-				ROS_INFO("\033[32m[px4ctrl] TRIGGER sent, allow user command.\033[32m");
+				ROS_INFO("\033[32m[JPCM] TRIGGER sent, allow user command.\033[32m");
 			}
 
 			// cout << "des.p=" << des.p.transpose() << endl;
@@ -221,14 +221,14 @@ void PX4CtrlFSM::process()
 			state = MANUAL_CTRL;
 			toggle_offboard_mode(false);
 
-			ROS_WARN("[px4ctrl] From CMD_CTRL(L3) to MANUAL_CTRL(L1)!");
+			ROS_WARN("[JPCM] From CMD_CTRL(L3) to MANUAL_CTRL(L1)!");
 		}
 		else if (!rc_data.is_command_mode || !cmd_is_received(now_time))
 		{
 			state = AUTO_HOVER;
 			set_hov_with_odom();
 			des = get_hover_des();
-			ROS_INFO("[px4ctrl] From CMD_CTRL(L3) to AUTO_HOVER(L2)!");
+			ROS_INFO("[JPCM] From CMD_CTRL(L3) to AUTO_HOVER(L2)!");
 		}
 		else
 		{
@@ -237,8 +237,8 @@ void PX4CtrlFSM::process()
 
 		if (takeoff_land_data.triggered && takeoff_land_data.takeoff_land_cmd == quadrotor_msgs::TakeoffLand::LAND)
 		{
-			ROS_ERROR("[px4ctrl] Reject AUTO_LAND, which must be triggered in AUTO_HOVER. \
-					Stop sending control commands for longer than %fs to let px4ctrl return to AUTO_HOVER first.",
+			ROS_ERROR("[JPCM] Reject AUTO_LAND, which must be triggered in AUTO_HOVER. \
+					Stop sending control commands for longer than %fs to let JPCM return to AUTO_HOVER first.",
 					  param.msg_timeout.cmd);
 		}
 
@@ -255,7 +255,7 @@ void PX4CtrlFSM::process()
 		{
 			state = AUTO_HOVER;
 			set_hov_with_odom();
-			ROS_INFO("\033[32m[px4ctrl] AUTO_TAKEOFF --> AUTO_HOVER(L2)\033[32m");
+			ROS_INFO("\033[32m[JPCM] AUTO_TAKEOFF --> AUTO_HOVER(L2)\033[32m");
 
 			takeoff_land.delay_trigger.first = true;
 			takeoff_land.delay_trigger.second = now_time + ros::Duration(AutoTakeoffLand_t::DELAY_TRIGGER_TIME);
@@ -275,14 +275,14 @@ void PX4CtrlFSM::process()
 			state = MANUAL_CTRL;
 			toggle_offboard_mode(false);
 
-			ROS_WARN("[px4ctrl] From AUTO_LAND to MANUAL_CTRL(L1)!");
+			ROS_WARN("[JPCM] From AUTO_LAND to MANUAL_CTRL(L1)!");
 		}
 		else if (!rc_data.is_command_mode)
 		{
 			state = AUTO_HOVER;
 			set_hov_with_odom();
 			des = get_hover_des();
-			ROS_INFO("[px4ctrl] From AUTO_LAND to AUTO_HOVER(L2)!");
+			ROS_INFO("[JPCM] From AUTO_LAND to AUTO_HOVER(L2)!");
 		}
 		else if (!get_landed())
 		{
@@ -295,7 +295,7 @@ void PX4CtrlFSM::process()
 			static bool print_once_flag = true;
 			if (print_once_flag)
 			{
-				ROS_INFO("\033[32m[px4ctrl] Wait for abount 10s to let the drone arm.\033[32m");
+				ROS_INFO("\033[32m[JPCM] Wait for abount 10s to let the drone arm.\033[32m");
 				print_once_flag = false;
 			}
 
@@ -309,7 +309,7 @@ void PX4CtrlFSM::process()
 						print_once_flag = true;
 						state = MANUAL_CTRL;
 						toggle_offboard_mode(false); // toggle off offboard after disarm
-						ROS_INFO("\033[32m[px4ctrl] AUTO_LAND --> MANUAL_CTRL(L1)\033[32m");
+						ROS_INFO("\033[32m[JPCM] AUTO_LAND --> MANUAL_CTRL(L1)\033[32m");
 					}
 
 					last_trial_time = now_time.toSec();
@@ -351,7 +351,7 @@ void PX4CtrlFSM::process()
 		}
 		else if(ctrl_mode == CTRL_MODE::MPC)
 		{
-			debug_msg = controller.calculateControl(des, odom_data, imu_data, thr_bodyrate_u, ctrl_mode);
+			debug_msg = controller.calculateControl(des, GT, odom_data, imu_data, thr_bodyrate_u, ctrl_mode);
 		}
 		else
 		{

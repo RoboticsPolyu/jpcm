@@ -17,7 +17,7 @@ void hover_thrust_cb(const mavros_msgs::TrustMoments::ConstPtr& msg, float *hove
 
 int main(int argc, char *argv[])
 {
-    ros::init(argc, argv, "px4ctrl");
+    ros::init(argc, argv, "jpcm");
     ros::NodeHandle nh("~");
 
     signal(SIGINT, mySigintHandler);
@@ -40,6 +40,13 @@ int main(int argc, char *argv[])
         nh.subscribe<mavros_msgs::ExtendedState>("/mavros/extended_state",
                                                  10,
                                                  boost::bind(&ExtendedState_Data_t::feed, &fsm.extended_state_data, _1));
+
+    ros::Subscriber gt_sub   =
+        nh.subscribe<nav_msgs::Odometry>("GT",
+                                         100,
+                                         boost::bind(&Odom_Data_t::feed, &fsm.GT, _1),
+                                         ros::VoidConstPtr(),
+                                         ros::TransportHints().tcpNoDelay());
 
     ros::Subscriber odom_sub =
         nh.subscribe<nav_msgs::Odometry>("odom",
