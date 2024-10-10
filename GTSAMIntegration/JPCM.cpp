@@ -124,10 +124,60 @@ void buildJPCMFG::buildFusionFG(gtsam_fg&  _graph,
     }
 
     _graph = graph_positioning_;
-
+    // std::cout << " ##################### Graph is: ###################\n";
+    // _graph.print();
   }
   else
   {
+    // gtsam::FastVector<gtsam::Key> keysToMarginalize;
+    // keysToMarginalize.push_back(X(state_idx-1+IDX_P_START));
+    // keysToMarginalize.push_back(V(state_idx-1+IDX_P_START));
+    // keysToMarginalize.push_back(B(state_idx-1+IDX_P_START));
+
+    // boost::shared_ptr<gtsam_fg> margGraph;
+    // margGraph = marginalizeOut(graph_positioning_, _initial_value, keysToMarginalize, nullptr, true);
+
+    // graph_positioning_ = *margGraph;
+    // // add new measurements factor
+    // uint16_t    idx =  window_lens_ + state_idx - 1 + IDX_P_START;
+    // gtsam::Rot3 rot = gtsam::Rot3(odom_v[window_lens_-1].q);
+    // gtsam::Pose3 pose(rot, odom_v[window_lens_-1].p);
+
+    // if(param_.factor_graph.use_rot)
+    // {
+    //   graph_positioning_.add(gtsam::PriorFactor<gtsam::Pose3>(X(idx), pose, vicon_noise));
+    // }
+    // else
+    // {
+    //   graph_positioning_.add(gtsam::GPSFactor(X(idx), odom_v[window_lens_-1].p, noise_model_gps)); 
+    // }
+
+    // float __dt = (odom_v[window_lens_-1].rcv_stamp - odom_v[window_lens_-2].rcv_stamp).toSec();
+    // std::cout << " __dt is : " << __dt << std::endl;
+    // // graph_positioning_.add(gtsam::PriorFactor<gtsam::Vector3>(V(idx), odom_v[window_lens_-1].v, vel_noise)); 
+    // if(!param_.factor_graph.opt_gravity_rot)
+    // {
+    //   graph_positioning_.add(IMUFactor(X(idx-1), V(idx-1), B(idx-1), X(idx), V(idx), __dt, imu_v[window_lens_-1].a, imu_v[window_lens_-1].w, imu_factor_noise));
+    // }
+    // else
+    // {
+    //   graph_positioning_.add(IMUFactorRg(X(idx-1), V(idx-1), B(idx-1), X(idx), V(idx), R(0), __dt, imu_v[window_lens_-1].a, imu_v[window_lens_-1].w, imu_factor_noise));
+    // }
+    
+    // gtsam_imuBi zero_bias(gtsam::Vector3(0,0,0), gtsam::Vector3(0,0,0));
+    // graph_positioning_.add(BetweenFactor<gtsam_imuBi>(B(idx-1), B(idx), zero_bias, bias_noise));
+
+    // gtsam::Pose3   __pose     = _initial_value.at<Pose3>  (X(idx-1));
+    // gtsam::Vector3 __vel      = _initial_value.at<Vector3>(V(idx-1));
+    // gtsam_imuBi    __imu_bias = _initial_value.at<gtsam_imuBi>(B(idx-1));
+
+    // std::pair<gtsam::Pose3, gtsam::Vector3> pred_State = 
+    //   propagateIMU(__pose, __vel, __imu_bias.correctAccelerometer(imu_v[window_lens_-1].a), __imu_bias.correctGyroscope(imu_v[window_lens_-1].w), __dt);
+
+    // _initial_value.insert(B(idx), __imu_bias);
+    // _initial_value.insert(X(idx), pred_State.first);
+    // _initial_value.insert(V(idx), pred_State.second);
+
     gtsam::FastVector<gtsam::Key> keysToMarginalize;
     keysToMarginalize.push_back(X(state_idx-1+IDX_P_START));
     keysToMarginalize.push_back(V(state_idx-1+IDX_P_START));
@@ -138,7 +188,7 @@ void buildJPCMFG::buildFusionFG(gtsam_fg&  _graph,
 
     graph_positioning_ = *margGraph;
     // add new measurements factor
-    uint16_t    idx =  window_lens_ + state_idx - 1 + IDX_P_START;
+    uint16_t    idx = state_idx - 1 + IDX_P_START;
     gtsam::Rot3 rot = gtsam::Rot3(odom_v[window_lens_-1].q);
     gtsam::Pose3 pose(rot, odom_v[window_lens_-1].p);
 
@@ -154,21 +204,32 @@ void buildJPCMFG::buildFusionFG(gtsam_fg&  _graph,
     float __dt = (odom_v[window_lens_-1].rcv_stamp - odom_v[window_lens_-2].rcv_stamp).toSec();
     std::cout << " __dt is : " << __dt << std::endl;
     // graph_positioning_.add(gtsam::PriorFactor<gtsam::Vector3>(V(idx), odom_v[window_lens_-1].v, vel_noise)); 
-    if(!param_.factor_graph.opt_gravity_rot)
+
+    uint16_t idx_b = 0;
+    if(state_idx == 1)
     {
-      graph_positioning_.add(IMUFactor(X(idx-1), V(idx-1), B(idx-1), X(idx), V(idx), __dt, imu_v[window_lens_-1].a, imu_v[window_lens_-1].w, imu_factor_noise));
+      idx_b = IDX_P_START + window_lens_ - 1;
     }
     else
     {
-      graph_positioning_.add(IMUFactorRg(X(idx-1), V(idx-1), B(idx-1), X(idx), V(idx), R(0), __dt, imu_v[window_lens_-1].a, imu_v[window_lens_-1].w, imu_factor_noise));
+      idx_b = idx - 1; 
+    }
+
+    if(!param_.factor_graph.opt_gravity_rot)
+    {
+      graph_positioning_.add(IMUFactor(X(idx_b), V(idx_b), B(idx_b), X(idx), V(idx), __dt, imu_v[window_lens_-1].a, imu_v[window_lens_-1].w, imu_factor_noise));
+    }
+    else
+    {
+      graph_positioning_.add(IMUFactor(X(idx_b), V(idx_b), B(idx_b), X(idx), V(idx), __dt, imu_v[window_lens_-1].a, imu_v[window_lens_-1].w, imu_factor_noise));
     }
     
     gtsam_imuBi zero_bias(gtsam::Vector3(0,0,0), gtsam::Vector3(0,0,0));
-    graph_positioning_.add(BetweenFactor<gtsam_imuBi>(B(idx-1), B(idx), zero_bias, bias_noise));
+    graph_positioning_.add(BetweenFactor<gtsam_imuBi>(B(idx_b), B(idx), zero_bias, bias_noise));
 
-    gtsam::Pose3   __pose     = _initial_value.at<Pose3>  (X(idx-1));
-    gtsam::Vector3 __vel      = _initial_value.at<Vector3>(V(idx-1));
-    gtsam_imuBi    __imu_bias = _initial_value.at<gtsam_imuBi>(B(idx-1));
+    gtsam::Pose3   __pose     = _initial_value.at<Pose3>  (X(idx_b));
+    gtsam::Vector3 __vel      = _initial_value.at<Vector3>(V(idx_b));
+    gtsam_imuBi    __imu_bias = _initial_value.at<gtsam_imuBi>(B(idx_b));
 
     std::pair<gtsam::Pose3, gtsam::Vector3> pred_State = 
       propagateIMU(__pose, __vel, __imu_bias.correctAccelerometer(imu_v[window_lens_-1].a), __imu_bias.correctGyroscope(imu_v[window_lens_-1].w), __dt);
@@ -178,12 +239,19 @@ void buildJPCMFG::buildFusionFG(gtsam_fg&  _graph,
     _initial_value.insert(V(idx), pred_State.second);
 
     _graph = graph_positioning_;
-
+    // std::cout << " ##################### Graph is: ###################\n";
+    // _graph.print();
   }
+
+  if(state_idx == window_lens_)
+  {
+    state_idx = 0;
+  }
+
   state_idx++;
 }
 
-
+/* Joined Positioning and Control */
 void buildJPCMFG::buildJoinedFG(gtsam_fg& _graph, gtsam_sols& _initial_value, 
                         const std::vector<Desired_State_t> &des_seq, double dt, uint64_t& state_idx)
 {
@@ -204,9 +272,17 @@ void buildJPCMFG::buildJoinedFG(gtsam_fg& _graph, gtsam_sols& _initial_value,
 
   uint16_t begin_u = 0;
   uint16_t end_u   = opt_traj_lens_;
-
-  uint16_t latest_state_idx = state_idx + window_lens_ + IDX_P_START - 2; 
   
+  uint16_t latest_state_idx = 0;
+  if(state_idx == 1)
+  {
+    latest_state_idx = window_lens_ - 1 + IDX_P_START;
+  }
+  else
+  {
+    latest_state_idx = state_idx - 1 + IDX_P_START;
+  }
+    
   for (uint16_t idx = begin_u; idx < end_u; idx++)
   {
     if(idx == begin_u)
@@ -223,7 +299,7 @@ void buildJPCMFG::buildJoinedFG(gtsam_fg& _graph, gtsam_sols& _initial_value,
     gtsam::Pose3   pose_idx(gtsam::Rot3(des_seq[idx].q), des_seq[idx].p);
     gtsam::Vector3 vel_idx   = des_seq[idx].v;
 
-    if(state_idx == 1)
+    if(first_add_crf_)
     {
       _initial_value.insert(X(idx + 1), pose_idx);
       _initial_value.insert(V(idx + 1), vel_idx);
@@ -241,7 +317,7 @@ void buildJPCMFG::buildJoinedFG(gtsam_fg& _graph, gtsam_sols& _initial_value,
     }
     
     gtsam::Vector4 init_input(10, 0, 0, 0);
-    if(state_idx ==1)
+    if(first_add_crf_)
     {
       _initial_value.insert(U(idx), init_input);
     }
@@ -271,6 +347,7 @@ void buildJPCMFG::buildJoinedFG(gtsam_fg& _graph, gtsam_sols& _initial_value,
     _graph.add(cntrolLimitTGyroFactor); 
 
   }
+  first_add_crf_ = false;
 
 }
 

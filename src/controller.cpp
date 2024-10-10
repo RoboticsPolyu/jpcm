@@ -136,11 +136,20 @@ quadrotor_msgs::Px4ctrlDebug Controller::fusion(const Odom_Data_t &odom, const I
     end   = clock();
     initial_value_ = result; 
     std::cout << " ---------------------------------------------------- Result ----------------------------------------------------" << std::endl;
-    // result.print();
+    result.print();
     opt_cost = (double)(end - start) / CLOCKS_PER_SEC;
     std::cout << " ---------- Optimize Time: [ " << opt_cost << " ] " << endl;
-  
-    uint16_t idx =  window_lens_ + state_idx_ - 2 + IDX_P_START;
+
+    uint16_t idx = 0;
+    if(state_idx_ == 1)
+    {
+      idx = window_lens_ - 1 + IDX_P_START;
+    }
+    else
+    {
+      idx = state_idx_ - 1 + IDX_P_START;
+    }
+    
     gtsam::Pose3 pose;
     gtsam::Vector3 vel;
     gtsam_imuBi imu_bias;
@@ -262,19 +271,28 @@ quadrotor_msgs::Px4ctrlDebug Controller::calculateControl(const Desired_State_t 
     thr_bodyrate_u.thrust    = thrust2;
     thr_bodyrate_u.bodyrates = bodyrates2;
 
-    uint16_t    idx =  window_lens_ + state_idx_ - 2 + IDX_P_START;
+    uint16_t idx = 0;
+    if(state_idx_ == 1)
+    {
+      idx = window_lens_ - 1 + IDX_P_START;
+    }
+    else
+    {
+      idx = state_idx_ - 1 + IDX_P_START;
+    }
+    
     gtsam::Pose3   pose;
     gtsam::Vector3 vel;
     gtsam_imuBi imu_bias;
 
-    pose = result.at<Pose3>(X(idx));
-    vel  = result.at<Vector3>(V(idx));
+    pose     = result.at<Pose3>      (X(idx));
+    vel      = result.at<Vector3>    (V(idx));
     imu_bias = result.at<gtsam_imuBi>(B(idx));
 
-    gtsam::Vector3 eular_xyz = pose.rotation().rpy();
-    gtsam::Vector3 gt_eular_xyz = gtsam::Rot3(odom.q).rpy();
+    gtsam::Vector3 eular_xyz     = pose.rotation().rpy();
+    gtsam::Vector3 gt_eular_xyz  = gtsam::Rot3(odom.q).rpy();
     gtsam::Vector3 des_eular_xyz = gtsam::Rot3(des_data_v_[0].q).rpy();
-    float distance_est = (des_data_v_[0].p - pose.translation()).norm();
+    float          distance_est  = (des_data_v_[0].p - pose.translation()).norm();
 
     std::cout << " ---------- Optimize Time: [ " << opt_cost << " ], " << "ori distance: [ " << distance << " ], est distance: [" << distance_est << " ]" << endl;
 

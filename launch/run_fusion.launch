@@ -7,7 +7,7 @@
 		<param name="extri_params_file" type="string" value="/home/amov/Fast250/src/jpcm/config/extrinsic.yaml"/>
 		<param name="body_pose_fusion"  type="string" value="/self/fusion_odom"/>
 
-        <rosparam command="load" file="$(find jpcm)/config/fusion.yaml" />
+        <rosparam command="load" file="$(find jpcm)/config/ctrl_param_fpv_MPC_with_fakeGPS_IMU_fusion.yaml" />
 	</node>
  
 </launch>

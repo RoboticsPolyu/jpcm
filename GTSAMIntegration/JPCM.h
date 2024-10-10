@@ -37,6 +37,8 @@ public:
   const uint16_t IDX_P_START = 100;
   Parameter_t    param_;
 
+  bool           first_add_crf_ = true; // first add control-related factors into factor graph
+
 };
 
 #endif // __JPCM_H__

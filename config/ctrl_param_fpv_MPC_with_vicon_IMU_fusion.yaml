@@ -11,7 +11,7 @@ max_manual_vel   : 1.0
 max_angle: 80  # Attitude angle limit in degree. A negative value means no limit.
 low_voltage: 13.2 # 4S battery
 odom_freq: 100
-ctrl_mode: 3      # DFBC 1 MPC 2 JPCM 3
+ctrl_mode: 2      # DFBC 1 MPC 2 JPCM 3
 
 rc_reverse: # *
     roll: false
@@ -122,7 +122,7 @@ Factor_graph:
     WINDOW_SIZE:   5
 
     POS_MEAS_MEAN:      0.000
-    POS_MEAS_COV:       0.500 # 0.05
+    POS_MEAS_COV:       0.001 # 0.05
     VEL_MEAS_COV:       0.050
     ROT_MEAS_COV:       0.001
     
