@@ -492,7 +492,7 @@ Controller::Controller(Parameter_t &param) : param_(param)
   opt_traj_lens_ = param_.factor_graph.OPT_LENS_TRAJ;
   window_lens_   = param_.factor_graph.WINDOW_SIZE;
 
-  stringstream ss; ss << "/home/amov/output/controller_log_";
+  stringstream ss; ss << "controller_log_";
   ss << t->tm_year + 1900 << "-" << t->tm_mon + 1 << "-" << t->tm_mday << "-" << t->tm_hour << "-" << t->tm_min << "-" << t->tm_sec << ".txt";
   std::cout << " -- log file:" << ss.str() << std::endl;
   log_.open(ss.str(), std::ios::out);
