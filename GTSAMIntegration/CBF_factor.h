@@ -249,71 +249,7 @@ namespace uavfactor
         double alpha_ = 0.0, beta_ = 0.0;  // Note: Defaults disable extensions; use constructor params.
     };
 
-    gtsam::Vector VeCBFPdFactor1::evaluateError(const gtsam::Pose3 &pi, const gtsam::Vector3 &vi, const gtsam::Vector4 &ui,
-                                            boost::optional<gtsam::Matrix &> H1, boost::optional<gtsam::Matrix &> H2, 
-                                            boost::optional<gtsam::Matrix &> H3) const
-    {
-        double epsilon = 1e-6;
 
-        gtsam::Matrix36 jac_ti;
-        gtsam::Vector3 p_p0 = pi.translation(jac_ti) - obs_;
-        double d = p_p0.norm();
-        double d_eps = std::max(d, epsilon);
-        gtsam::Matrix13 p_p0_t = p_p0.transpose();
-        gtsam::Vector3 v_diff = vi - obs_vel_;
-        double p_dot_vdiff = p_p0.dot(v_diff);
-
-        gtsam::Matrix13 H_ti = evaluateH_ti(p_p0, d_eps, p_p0_t, v_diff, p_dot_vdiff);
-        gtsam::Matrix13 H_vi = evaluateH_vi(p_p0, d_eps, p_p0_t);
-
-        gtsam::Vector3 _e2(0., 0., 1.);  // Note: Assumes z-axis thrust; ui(1:3) unused.
-        gtsam::Vector3 _g(0., 0., 9.81);
-        gtsam::Vector3 _ai = _e2 * ui(0);
-
-        gtsam::Matrix36 J_ri;
-        gtsam::Matrix3 J_r_ri, J_r_ai;
-        gtsam::Vector3 R_ai = pi.rotation(J_ri).rotate(_ai, J_r_ri, J_r_ai);
-        gtsam::Vector3 term3_vec = -_g + R_ai;  // a_i
-
-        gtsam::Vector1 hi = gtsam::Vector1(1.0 / safe_d_ - 1.0 / d_eps) + beta_  / d_eps * p_p0_t * v_diff;
-        gtsam::Vector1 x_dot_0_term = H_ti * vi;
-        gtsam::Vector1 x_dot_2_term = H_vi * term3_vec;
-        gtsam::Vector1 err = hi + alpha_ * x_dot_0_term + alpha_ * x_dot_2_term;
-
-        if (err(0) > 0.0)
-        {
-            err(0) = 0.0;
-            if (H1) *H1 = gtsam::Matrix::Zero(1, 6);
-            if (H2) *H2 = gtsam::Matrix::Zero(1, 3);
-            if (H3) *H3 = gtsam::Matrix::Zero(1, 4);
-        }
-        else
-        {
-            if (H1) 
-            {
-                gtsam::Matrix13 H_ti_err = evaluateH_ti_err(p_p0, d_eps, p_p0_t, v_diff, p_dot_vdiff, term3_vec, H_ti);
-                *H1 = H_ti_err * jac_ti + alpha_ * H_vi * J_r_ri * J_ri;
-            }
-
-            if (H2)
-            {
-                gtsam::Matrix13 H_vi_err = evaluateH_vi_err(p_p0, d_eps, p_p0_t, v_diff, p_dot_vdiff, H_ti, H_vi);
-                *H2 = H_vi_err;
-            }
-            
-            if (H3)
-            {
-                gtsam::Matrix14 h3 = gtsam::Matrix14::Zero();
-                gtsam::Matrix13 J_ai = alpha_ * H_vi * J_r_ai;
-                h3.block<1, 1>(0, 0) = J_ai * _e2;  // Scalar, but matrix form
-                *H3 = h3;
-            }
-        }
-
-        return err;
-    }
-
-    
 
     // Velocity extended CBF Cylinder1
     class GTSAM_EXPORT VeCBFPdFactorCylinder1: public NoiseModelFactor3<gtsam::Pose3, gtsam::Vector3, gtsam::Vector4>
@@ -399,73 +335,6 @@ namespace uavfactor
         gtsam::Matrix3 _E12;
     };
 
-    gtsam::Vector VeCBFPdFactorCylinder1::evaluateError(const gtsam::Pose3 &pi, const gtsam::Vector3 &vi, const gtsam::Vector4 &ui,
-                                            boost::optional<gtsam::Matrix &> H1, boost::optional<gtsam::Matrix &> H2, 
-                                            boost::optional<gtsam::Matrix &> H3) const
-    {
-        double epsilon = 1e-6;
-
-        gtsam::Matrix36 jac_ti;
-        gtsam::Vector3 p_p0 = (_E12 * pi.translation(jac_ti) - obs_);
-        double d = p_p0.norm();
-        double d_eps = std::max(d, epsilon);
-        gtsam::Matrix13 p_p0_t = p_p0.transpose();
-        gtsam::Vector3 _vi = _E12 * vi;
-        gtsam::Vector3 v_diff = _vi - obs_vel_;
-        double p_dot_vdiff = p_p0.dot(v_diff);
-
-        gtsam::Matrix13 H_ti = evaluateH_ti(p_p0, d_eps, p_p0_t, v_diff, p_dot_vdiff);
-        gtsam::Matrix13 H_vi = evaluateH_vi(p_p0, d_eps, p_p0_t);
-
-        gtsam::Vector3 _e2(0., 0., 1.);  // Note: Assumes z-axis thrust; ui(1:3) unused.
-        gtsam::Vector3 _g(0., 0., 9.81);
-        gtsam::Vector3 _ai = _e2 * ui(0);
-
-        gtsam::Matrix36 J_ri;
-        gtsam::Matrix3 J_r_ri, J_r_ai;
-        gtsam::Vector3 R_ai = pi.rotation(J_ri).rotate(_ai, J_r_ri, J_r_ai);
-        gtsam::Vector3 term3_vec = -_g + R_ai;  // a_i
-
-        gtsam::Vector1 hi = gtsam::Vector1(1.0 / safe_d_ - 1.0 / d_eps) + beta_  / d_eps * p_p0_t * v_diff;
-        gtsam::Vector1 x_dot_0_term = H_ti * _vi;
-        gtsam::Vector1 x_dot_2_term = H_vi * term3_vec;
-        gtsam::Vector1 err = hi + alpha_ * x_dot_0_term + alpha_ * x_dot_2_term;
-
-        if (err(0) > 0.0)
-        {
-            err(0) = 0.0;
-            if (H1) *H1 = gtsam::Matrix::Zero(1, 6);
-            if (H2) *H2 = gtsam::Matrix::Zero(1, 3);
-            if (H3) *H3 = gtsam::Matrix::Zero(1, 4);
-        }
-        else
-        {
-            if (H1) 
-            {
-                gtsam::Matrix13 H_ti_err = evaluateH_ti_err(p_p0, d_eps, p_p0_t, v_diff, p_dot_vdiff, term3_vec, H_ti);
-                *H1 = H_ti_err * _E12 * jac_ti + alpha_ * H_vi * J_r_ri * J_ri;
-            }
-
-            if (H2)
-            {
-                gtsam::Matrix13 H_vi_err = evaluateH_vi_err(p_p0, d_eps, p_p0_t, v_diff, p_dot_vdiff, H_ti, H_vi) * _E12;
-                *H2 = H_vi_err;
-            }
-            
-            if (H3)
-            {
-                gtsam::Matrix14 h3 = gtsam::Matrix14::Zero();
-                gtsam::Matrix13 J_ai = alpha_ * H_vi * J_r_ai;
-                h3.block<1, 1>(0, 0) = J_ai * _e2;  // Scalar, but matrix form
-                *H3 = h3;
-            }
-        }
-
-        return err;
-    }
-    
-
-    
     
     // Deprecated function 
     
