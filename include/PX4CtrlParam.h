@@ -128,6 +128,12 @@ public:
 		bool opt_gravity_rot;
 		bool use_vel;
 		bool use_rot;
+
+		double CBF_alpha;
+		double CBF_beta;
+		double point_obs_sigma;
+		double quad_radius;
+		double safe_d;
 	};
 
 	Gain gain;

@@ -10,6 +10,7 @@
 #include <mavros_msgs/SetMode.h>
 #include <mavros_msgs/CommandLong.h>
 #include <mavros_msgs/CommandBool.h>
+#include <mutex>
 #include "TrustMoments.h"
 
 #include "input.h"
@@ -36,12 +37,16 @@ public:
 
 	RC_Data_t rc_data;
 	State_Data_t state_data;
-	ExtendedState_Data_t extended_state_data;
-	Odom_Data_t          odom_data;
-	Odom_Data_t          GT;
-	Imu_Data_t           imu_data;
-	Imu_Data_t           imu_raw_data;
-	Acc_Data_t           acc_data; // linear acc
+	ExtendedState_Data_t  extended_state_data;
+	Odom_Data_t           odom_data;
+	Odom_Data_t           GT;
+	Imu_Data_t            imu_data;
+	Imu_Data_t            imu_raw_data;
+	Acc_Data_t            acc_data; // linear acc
+	
+	std::mutex obs_data_mutex; 
+	std::vector<Obstacle> obs_data;
+
 	float                hover_thrust;
 	
 	Command_Data_t cmd_data;
@@ -98,6 +103,18 @@ private:
 	void set_start_pose_for_takeoff_land(const Odom_Data_t &odom);
 	Desired_State_t get_rotor_speed_up_des(const ros::Time now);
 	Desired_State_t get_takeoff_land_des(const double speed);
+
+	std::vector<Obstacle> get_obs_data_copy() 
+    {
+        std::lock_guard<std::mutex> lock(obs_data_mutex);
+        return obs_data;
+    }
+    
+    void clear_obs_data()
+    {
+        std::lock_guard<std::mutex> lock(obs_data_mutex);
+        obs_data.clear();
+    }
 
 	// ---- tools ----
 	void set_hov_with_odom();

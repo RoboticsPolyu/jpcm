@@ -127,6 +127,14 @@ void Parameter_t::config_from_ros_handle(const ros::NodeHandle &nh)
 	read_essential_param(nh, "Factor_graph/opt_gravity_rot",  factor_graph.opt_gravity_rot);
 	read_essential_param(nh, "Factor_graph/use_vel",          factor_graph.use_vel);
 	read_essential_param(nh, "Factor_graph/use_rot",          factor_graph.use_rot);
+
+	// CBF
+	read_essential_param(nh, "Factor_graph/CBF_alpha",         factor_graph.CBF_alpha);
+	read_essential_param(nh, "Factor_graph/CBF_beta",          factor_graph.CBF_beta);
+	read_essential_param(nh, "Factor_graph/point_obs_sigma",   factor_graph.point_obs_sigma);
+	read_essential_param(nh, "Factor_graph/quad_radius",       factor_graph.quad_radius);
+	read_essential_param(nh, "Factor_graph/safe_d",            factor_graph.safe_d);
+
 	read_essential_param(nh, "ctrl_mode", ctrl_mode);
 
 	max_angle /= (180.0 / M_PI);

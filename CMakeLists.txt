@@ -129,3 +129,26 @@ target_link_libraries(FakeGPS_IMU_fusion_node
   gtsam_unstable
   ${YAML_CPP_LIBRARIES}
 )
+
+
+add_executable(FactorMPC_node 
+  app/FactorMPC_node.cpp
+  src/controller.cpp
+  src/input.cpp  
+  src/PX4CtrlFSM.cpp
+  src/PX4CtrlParam.cpp
+  GTSAMIntegration/CBF_factor.cpp
+  GTSAMIntegration/factors.cpp
+  GTSAMIntegration/GTSAMUtils.cpp
+  GTSAMIntegration/JPCM.cpp
+  GTSAMIntegration/Marginalization.cpp
+)
+
+add_dependencies(FactorMPC_node quadrotor_msgs)
+
+target_link_libraries(FactorMPC_node
+  ${catkin_LIBRARIES}
+  gtsam 
+  gtsam_unstable
+  ${YAML_CPP_LIBRARIES}
+)

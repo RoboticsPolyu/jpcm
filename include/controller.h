@@ -41,6 +41,11 @@ public:
   // SP-MPC
   quadrotor_msgs::Px4ctrlDebug calculateControl(const Desired_State_t &des, const Odom_Data_t &GT, const Odom_Data_t &odom, const Imu_Data_t &imu, 
     Controller_Output_t &thr_bodyrate_u, CTRL_MODE mode_switch);
+  
+    // MPC + OBS
+  quadrotor_msgs::Px4ctrlDebug calculateControl(const Desired_State_t &des, const Odom_Data_t &GT, 
+    const Odom_Data_t &odom, const Imu_Data_t &imu, const std::vector<Obstacle>& obs,
+    Controller_Output_t &thr_bodyrate_u, CTRL_MODE mode_switch);
 
   // JPCM
   quadrotor_msgs::Px4ctrlDebug calculateControl(const Desired_State_t &des, const Odom_Data_t &odom, const Imu_Data_t &imu, const Imu_Data_t &imu_raw, 

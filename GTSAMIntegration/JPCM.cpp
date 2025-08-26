@@ -1,3 +1,4 @@
+#include "CBF_factor.h"
 #include "factors.h"
 #include "JPCM.h"
 #include "Marginalization.h"
@@ -418,6 +419,128 @@ void buildJPCMFG::buildFactorGraph(gtsam_fg& _graph, gtsam_sols& _initial_value,
       graph.add(gtsam::PriorFactor<gtsam::Vector3>(V(idx + 1), vel_idx, ref_predict_vel_noise));
     }
 
+    if (idx == 0)
+    {              
+      gtsam::Rot3 rot = gtsam::Rot3(odom.q);
+      gtsam::Pose3 pose(rot, odom.p);
+      
+      graph.add(gtsam::PriorFactor<gtsam::Pose3>  (X(idx), pose, vicon_noise));
+      graph.add(gtsam::PriorFactor<gtsam::Vector3>(V(idx), odom.v, vel_noise));
+      
+      initial_value.insert(X(idx), pose);
+      initial_value.insert(V(idx), odom.v);
+    }
+  }
+
+  _graph         = graph;
+  _initial_value = initial_value;
+}
+
+
+/* 
+ * MPC + CBF
+ */
+void buildJPCMFG::buildFactorGraph(gtsam_fg& _graph, gtsam_sols& _initial_value, 
+  const std::vector<Desired_State_t> &des_seq, const Odom_Data_t &odom, const std::vector<Obstacle>& obs, double dt)
+{
+  auto input_jerk  = noiseModel::Diagonal::Sigmas(Vector4(param_.factor_graph.INPUT_JERK_T, 
+      param_.factor_graph.INPUT_JERK_M, param_.factor_graph.INPUT_JERK_M, param_.factor_graph.INPUT_JERK_M3));
+
+  auto dynamics_noise = noiseModel::Diagonal::Sigmas((Vector(9) << Vector3::Constant(param_.factor_graph.DYNAMIC_P_COV), 
+      Vector3::Constant(param_.factor_graph.DYNAMIC_R_COV), Vector3::Constant(param_.factor_graph.DYNAMIC_V_COV)).finished());
+  
+  // Initial state noise
+  auto vicon_noise = noiseModel::Diagonal::Sigmas((Vector(6) << Vector3::Constant(param_.factor_graph.ROT_MEAS_COV), Vector3::Constant(param_.factor_graph.PRI_VICON_POS_COV)).finished());
+  auto vel_noise   = noiseModel::Diagonal::Sigmas(Vector3(param_.factor_graph.PRI_VICON_VEL_COV, param_.factor_graph.PRI_VICON_VEL_COV, param_.factor_graph.PRI_VICON_VEL_COV));
+  auto point_obs_noise = noiseModel::Diagonal::Sigmas(Vector1(param_.factor_graph.point_obs_sigma));
+
+  auto ref_predict_vel_noise = noiseModel::Diagonal::Sigmas(Vector3(param_.factor_graph.CONTROL_V_COV, param_.factor_graph.CONTROL_V_COV, param_.factor_graph.CONTROL_V_COV));
+
+  gtsam_fg   graph;
+  gtsam_sols initial_value;
+
+  graph.empty();
+  initial_value.empty();
+
+  auto clf_sigma = noiseModel::Diagonal::Sigmas(Vector4(1.0, 1.0, 1.0, 1.0));
+  ControlLimitTGyroFactor cntrolLimitTGyroFactor(U(0), clf_sigma, param_.factor_graph.low, param_.factor_graph.high,
+      param_.factor_graph.glow, param_.factor_graph.ghigh, param_.factor_graph.thr, param_.factor_graph.gthr, param_.factor_graph.alpha);
+  graph.add(cntrolLimitTGyroFactor);
+
+  gtsam::Vector3 drag_k(-param_.rt_drag.x, -param_.rt_drag.y, -param_.rt_drag.z);
+  
+  double safe_d = param_.factor_graph.safe_d;
+  double cbf_alpha = param_.factor_graph.CBF_alpha;
+  double cbf_beta = param_.factor_graph.CBF_beta;
+  double quad_radius = param_.factor_graph.quad_radius;
+  Obstacle obs1;
+
+  for (uint16_t idx = 0; idx < param_.factor_graph.OPT_LENS_TRAJ; idx++)
+  {
+    DynamicsFactorTGyro dynamics_factor(X(idx), V(idx), U(idx), X(idx + 1), V(idx + 1), dt, param_.mass, drag_k, dynamics_noise);
+    graph.add(dynamics_factor);
+    
+    gtsam::Pose3   pose_idx(gtsam::Rot3(des_seq[idx].q), des_seq[idx].p);
+    gtsam::Vector3 vel_idx   = des_seq[idx].v;
+
+    initial_value.insert(X(idx + 1), pose_idx);
+    initial_value.insert(V(idx + 1), vel_idx);
+
+    if(idx != 0)
+    {
+      BetForceMoments bet_FM_factor(U(idx - 1), U(idx), input_jerk);
+      graph.add(bet_FM_factor);
+    }
+    
+    gtsam::Vector4 init_input(10, 0, 0, 0);
+    initial_value.insert(U(idx), init_input);
+
+    gtsam::Vector3 control_r_cov(param_.factor_graph.CONTROL_R1_COV, param_.factor_graph.CONTROL_R2_COV, param_.factor_graph.CONTROL_R3_COV);
+    if(idx == param_.factor_graph.OPT_LENS_TRAJ - 1)
+    {   
+      gtsam::Vector3 final_position_ref(param_.factor_graph.CONTROL_PF_COV_X, param_.factor_graph.CONTROL_PF_COV_Y, param_.factor_graph.CONTROL_PF_COV_Z);
+      auto ref_predict_pose_noise = noiseModel::Diagonal::Sigmas((Vector(6) << control_r_cov, final_position_ref).finished()); 
+      graph.add(gtsam::PriorFactor<gtsam::Pose3>(X(idx + 1), pose_idx, ref_predict_pose_noise));
+      graph.add(gtsam::PriorFactor<gtsam::Vector3>(V(idx + 1), vel_idx, ref_predict_vel_noise));
+    }
+    else
+    {
+      gtsam::Vector3 _position_ref(param_.factor_graph.CONTROL_P_COV_X, param_.factor_graph.CONTROL_P_COV_Y, param_.factor_graph.CONTROL_P_COV_Z);
+      auto ref_predict_pose_noise = noiseModel::Diagonal::Sigmas((Vector(6) << control_r_cov, _position_ref).finished());
+      graph.add(gtsam::PriorFactor<gtsam::Pose3>(X(idx + 1), pose_idx, ref_predict_pose_noise));
+      graph.add(gtsam::PriorFactor<gtsam::Vector3>(V(idx + 1), vel_idx, ref_predict_vel_noise));
+    }
+
+    
+    for(uint16_t obsi = 0; obsi < obs.size(); obsi++)
+    {
+        obs1 = obs[obsi];
+        if(obs1.obs_type == ObsType::sphere)
+        {
+            // graph.add(PointObsFactor(X(idx+1), obs1, obs1_radius + safe_d, point_obs_noise));
+            if(idx == param_.factor_graph.OPT_LENS_TRAJ - 1)
+            {
+                graph.add(CBFPdFactor(X(idx+1), V(idx+1), obs1.obs_pos, obs1.obs_size + safe_d + quad_radius, param_.factor_graph.CBF_alpha, point_obs_noise));
+            }
+            else
+            {
+                graph.add(VeCBFPdFactor1(X(idx+1), V(idx+1), U(idx+1), obs1.obs_pos, obs1.obs_vel, obs1.obs_size + safe_d + quad_radius, cbf_alpha, cbf_beta, point_obs_noise));
+            }
+        }
+        else if(obs1.obs_type == ObsType::cylinder)
+        {
+            // std::cout << "Cylinder Obs: " << obs1.obs_pos.transpose() << " - index: " << obsi << std::endl;
+            if(idx == param_.factor_graph.OPT_LENS_TRAJ  - 1)
+            {
+                graph.add(CBFPdFactorCylinder(X(idx+1), V(idx+1), obs1.obs_pos, obs1.obs_size + safe_d + quad_radius, cbf_alpha, point_obs_noise));
+            }
+            else
+            {
+                graph.add(VeCBFPdFactorCylinder1(X(idx+1), V(idx+1), U(idx+1), obs1.obs_pos, obs1.obs_vel, obs1.obs_size + safe_d + quad_radius, cbf_alpha, cbf_beta, point_obs_noise));
+            }
+        }
+    }
+          
     if (idx == 0)
     {              
       gtsam::Rot3 rot = gtsam::Rot3(odom.q);

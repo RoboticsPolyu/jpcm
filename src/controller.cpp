@@ -474,6 +474,123 @@ quadrotor_msgs::Px4ctrlDebug Controller::calculateControl(const Desired_State_t 
   return debug_msg_;
 }
 
+/* 
+ * MPC + OBS
+ */
+quadrotor_msgs::Px4ctrlDebug Controller::calculateControl(const Desired_State_t &des, const Odom_Data_t &GT, 
+  const Odom_Data_t &odom, const Imu_Data_t &imu, const std::vector<Obstacle>& obs,
+  Controller_Output_t &thr_bodyrate_u, CTRL_MODE mode_switch)
+{
+  // Odom_Data_t odom_noise = add_Guassian_noise(odom);
+  Odom_Data_t odom_noise = odom;
+  
+  gtsam::Vector3 gt_rxyz = gtsam::Rot3(GT.q).rpy();
+
+  bool   timeout  = false;
+  double opt_cost = 0.0f;
+  double thrust   = 0.0f;
+  double thrust2  = 0.0f;
+  gtsam::Vector3 bodyrates(0,0,0);
+  gtsam::Vector3 bodyrates2(0,0,0);
+
+  des_data_v_.push_back(des);
+
+  if(timeout || mode_switch == DFBC || des_data_v_.size() < opt_traj_lens_)
+  {
+    Controller::calculateControl(des_data_v_[0], odom_noise, imu, thr_bodyrate_u);
+    thrust    = thr_bodyrate_u.thrust;
+    bodyrates = thr_bodyrate_u.bodyrates;
+  }
+  else if(mode_switch == MPC && des_data_v_.size() == opt_traj_lens_ ) 
+  {
+    clock_t start, end;
+
+    gtsam::LevenbergMarquardtParams parameters;
+    parameters.absoluteErrorTol = 100;
+    parameters.relativeErrorTol = 1e-2;
+    parameters.maxIterations    = 10;
+    parameters.verbosity        = gtsam::NonlinearOptimizerParams::SILENT;
+    parameters.verbosityLM      = gtsam::LevenbergMarquardtParams::SILENT;
+    graph_.empty();
+
+    // std::cout << " --------------------- MPC -------------------- " << std::endl;
+    FGbuilder->buildFactorGraph(graph_, initial_value_, des_data_v_, odom_noise, obs, dt_);
+    LevenbergMarquardtOptimizer optimizer(graph_, initial_value_, parameters);
+    start = clock();
+    Values result = optimizer.optimize();
+    end = clock();
+    opt_cost = (double)(end-start)/CLOCKS_PER_SEC;
+    float distance = (des_data_v_[0].p - odom_noise.p).norm();
+    std::cout << " ---------- Optimize Time: [ " << opt_cost << " ], " << "distance: [ " << distance << " ]" << endl;
+    
+    gtsam::Vector4 input;
+    gtsam::Pose3   pose;
+    gtsam::Vector3 vel;
+    gtsam_imuBi imu_bias;
+
+    input = result.at<gtsam::Vector4>(U(0));
+    Eigen::Vector3d des_acc(0, 0, input[0]);
+
+    pose = result.at<Pose3>(X(0));
+    vel = result.at<Vector3>(V(0));
+
+    gtsam::Vector3 fusion_rxyz = pose.rotation().rpy();
+
+    thrust2    = Controller::computeDesiredCollectiveThrustSignal(des_acc);
+    bodyrates2 = Eigen::Vector3d(input[1], input[2], input[3]);
+
+    thr_bodyrate_u.thrust    = thrust2;
+    thr_bodyrate_u.bodyrates = bodyrates2;
+
+    gtsam::Vector3 des_eular_xyz = gtsam::Rot3(des_data_v_[0].q).rpy();
+
+    log_ << std::setprecision(19)
+      // Des info
+      << des_data_v_[0].rcv_stamp.toSec() <<  " " 
+      << des_data_v_[0].p.x() << " " << des_data_v_[0].p.y() << " " << des_data_v_[0].p.z() << " "
+      << des_data_v_[0].v.x() << " " << des_data_v_[0].v.y() << " " << des_data_v_[0].v.z() << " "
+      << des_eular_xyz.x()    << " " << des_eular_xyz.y()    << " " << des_eular_xyz.z()    << " "
+
+      // Positioning GT Info
+      << GT.p.x()    << " " << GT.p.y()    << " " << GT.p.z()    << " "
+      << gt_rxyz.x() << " " << gt_rxyz.y() << " " << gt_rxyz.z() << " "
+      << GT.v.x()    << " " << GT.v.y()    << " " << GT.v.z()    << " "
+
+      // Positioning with Noise
+      << odom_noise.p.x() << " " << odom_noise.p.y() << " " << odom_noise.p.z() << " " 
+      << odom_noise.v.x() << " " << odom_noise.v.y() << " " << odom_noise.v.z() << " "
+
+      // Positioning Estimation
+      << pose.translation().x() << " " << pose.translation().y() << " " << pose.translation().z() << " "
+      << vel.x()                << " " << vel.y()                << " " << vel.z()                << " "
+      << fusion_rxyz.x()        << " " << fusion_rxyz.y()        << " " << fusion_rxyz.z()        << " "
+      
+      // Time cost
+      << opt_cost << " "
+      
+      // IMU_raw
+      << 0 << " " << 0 << " " << 0 << " "
+      << 0 << " " << 0 << " " << 0 << " "
+
+      // Bias
+      << imu_bias.accelerometer().x() << " " << imu_bias.accelerometer().y() << " " << imu_bias.accelerometer().z() << " "
+      << imu_bias.gyroscope().x()     << " " << imu_bias.gyroscope().y()     << " " << imu_bias.gyroscope().z()     << " "
+      
+      // Control
+      << thrust2 << " " 
+      << bodyrates2.x() << " " << bodyrates2.y() << " " << bodyrates2.z() << " " // MPC
+
+      << std::endl;
+  }
+
+  if(des_data_v_.size() >= opt_traj_lens_)
+  {
+    des_data_v_.erase(des_data_v_.begin());
+  }
+  return debug_msg_;
+}
+
+
 double Controller::fromQuaternion2yaw(Eigen::Quaterniond q)
 {
   double yaw = atan2(2 * (q.x()*q.y() + q.w()*q.z()), q.w()*q.w() + q.x()*q.x() - q.y()*q.y() - q.z()*q.z());

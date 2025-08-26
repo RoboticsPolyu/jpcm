@@ -28,6 +28,10 @@ public:
   void buildJoinedFG(gtsam_fg& _graph, gtsam_sols& _initial_value, 
                      const std::vector<Desired_State_t> &des_seq, double dt, uint64_t& state_idx);
   
+  void buildFactorGraph(gtsam_fg& _graph, gtsam_sols& _initial_value, 
+                        const std::vector<Desired_State_t> &des_seq, const Odom_Data_t &odom, 
+                        const std::vector<Obstacle>& obs, double dt);
+
   gtsam_fg      graph_positioning_;
   gtsam::Values initial_value_positioning_;
 

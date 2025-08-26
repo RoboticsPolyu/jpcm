@@ -50,6 +50,10 @@ CTRL_MODE PX4CtrlFSM::cvt_ctrl_mode(uint8_t ctrl_mode)
 	{
 		_ctrl_mode = CTRL_MODE::JPCM;
 	}
+	else if(ctrl_mode == 4)
+	{
+		_ctrl_mode = CTRL_MODE::MPCOBS;
+	}
 	else
 	{
 		std::cout << "Ctrl mode is wrong ! " << std::endl;
@@ -352,6 +356,11 @@ void PX4CtrlFSM::process()
 		else if(ctrl_mode == CTRL_MODE::MPC)
 		{
 			debug_msg = controller.calculateControl(des, GT, odom_data, imu_data, thr_bodyrate_u, ctrl_mode);
+		}
+		else if(ctrl_mode == CTRL_MODE::MPCOBS)
+		{
+			std::vector<Obstacle> _obs_data = get_obs_data_copy();
+			debug_msg = controller.calculateControl(des, GT, odom_data, imu_data, _obs_data, thr_bodyrate_u, ctrl_mode);
 		}
 		else
 		{

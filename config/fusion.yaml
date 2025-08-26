@@ -188,3 +188,8 @@ Factor_graph:
     use_vel:            false
     use_rot:            true
 
+    CBF_alpha:          0.
+    CBF_beta:           0.
+    point_obs_sigma:    0.
+    quad_radius:        0.0
+    safe_d:             0.0

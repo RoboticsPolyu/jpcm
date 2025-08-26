@@ -60,8 +60,27 @@ enum CTRL_MODE
   DFBC = 0x01,
   MPC,
   JPCM,
+  MPCOBS,
   MAX
 };
 
+
+enum ObsType
+{
+    sphere   = 0,
+    box      = 1,
+    cylinder = 2
+};
+
+// Define a structure of obstacles
+typedef struct Obstacle 
+{
+    uint32_t timestamp;
+    ObsType obs_type;
+    Eigen::Vector3d obs_vel;
+    Eigen::Vector3d obs_pos;
+    float obs_size;
+
+}Obstacle;
 
 #endif // __TYPE_H__
