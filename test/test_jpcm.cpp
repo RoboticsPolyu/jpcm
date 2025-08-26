@@ -45,15 +45,12 @@ int main(int argc, char *argv[])
       des.p = Eigen::Vector3d(0,0,v*(i+1)*dt);
       des.v = Eigen::Vector3d(0,0,v);
       std::cout << "calculateControl" << i << std::endl;
-      controller.calculateControl(des, odom, imu, imu_raw, ctrl_cmd, MPC);
+      controller.calculateControl(des, odom, odom, imu_raw, ctrl_cmd, MPC);    
+      std::cout << "ctrl thrust: " 
+        << ctrl_cmd.thrust << std::endl;
+      std::cout << "ctrl bodyrate: [" 
+        << ctrl_cmd.bodyrates.x() << ", " << ctrl_cmd.bodyrates.y() << ", " << ctrl_cmd.bodyrates.z() << "]" << std::endl;
     }
-
-    std::cout << "MPC ctrl thrust: " << ctrl_cmd.mpc_thrust << std::endl;
-    std::cout << "MPC ctrl bodyrate: [" << ctrl_cmd.mpc_bodyrates.x() << ", " << ctrl_cmd.mpc_bodyrates.y() << ", " << ctrl_cmd.mpc_bodyrates.z() << "]" << std::endl;
-
-    std::cout << "DFBC ctrl thrust: " << ctrl_cmd.thrust << std::endl;
-    std::cout << "DFBC ctrl bodyrate: [" << ctrl_cmd.bodyrates.x() << ", " << ctrl_cmd.bodyrates.y() << ", " << ctrl_cmd.bodyrates.z() << "]" << std::endl;
-  
   }
   
   return 0;
