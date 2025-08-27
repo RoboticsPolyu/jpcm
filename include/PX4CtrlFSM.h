@@ -82,7 +82,7 @@ public:
 	void process();
 	bool rc_is_received(const ros::Time &now_time);
 	bool cmd_is_received(const ros::Time &now_time);
-	bool odom_is_received(const ros::Time &now_time);
+	bool odom_is_received(const ros::Time &now_time, const Odom_Data_t &odom);
 	bool imu_is_received(const ros::Time &now_time);
 	bool bat_is_received(const ros::Time &now_time);
 	bool recv_new_odom();
@@ -117,7 +117,7 @@ private:
     }
 
 	// ---- tools ----
-	void set_hov_with_odom();
+	void set_hov_with_odom(const Odom_Data_t &odom);
 	void set_hov_with_rc();
 
 	bool toggle_offboard_mode(bool on_off); // It will only try to toggle once, so not blocked.

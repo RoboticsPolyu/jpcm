@@ -76,12 +76,12 @@ int main(int argc, char *argv[])
     std::string obs_twist_sub_topic = "/vrpn_client_node/"; 
     obs_twist_sub_topic.append(obs_name); obs_twist_sub_topic.append("/twist");
 
-    pose_sub = nh.subscribe<geometry_msgs::PoseStamped> (obs_pose_sub_topic,  
-                                                            100, 
-                                                            boost::bind(pose_callback, _1, &fsm));
-    twist_sub = nh.subscribe<geometry_msgs::TwistStamped>(obs_twist_sub_topic, 
-                                                            100, 
-                                                            boost::bind(twist_callback, _1, &fsm));
+    // pose_sub = nh.subscribe<geometry_msgs::PoseStamped> (obs_pose_sub_topic,  
+    //                                                         100, 
+    //                                                         boost::bind(pose_callback, _1, &fsm));
+    // twist_sub = nh.subscribe<geometry_msgs::TwistStamped>(obs_twist_sub_topic, 
+    //                                                         100, 
+    //                                                         boost::bind(twist_callback, _1, &fsm));
 
 
     ros::Subscriber state_sub =
@@ -96,42 +96,42 @@ int main(int argc, char *argv[])
 
     ros::Subscriber gt_sub   =
         nh.subscribe<nav_msgs::Odometry>("GT",
-                                         100,
+                                         10,
                                          boost::bind(&Odom_Data_t::feed, &fsm.GT, _1),
                                          ros::VoidConstPtr(),
                                          ros::TransportHints().tcpNoDelay());
 
     ros::Subscriber odom_sub =
         nh.subscribe<nav_msgs::Odometry>("odom",
-                                         100,
+                                         10,
                                          boost::bind(&Odom_Data_t::feed, &fsm.odom_data, _1),
                                          ros::VoidConstPtr(),
                                          ros::TransportHints().tcpNoDelay());
 
     ros::Subscriber cmd_sub =
         nh.subscribe<quadrotor_msgs::PositionCommand>("cmd",
-                                                      100,
+                                                      10,
                                                       boost::bind(&Command_Data_t::feed, &fsm.cmd_data, _1),
                                                       ros::VoidConstPtr(),
                                                       ros::TransportHints().tcpNoDelay());
 
     ros::Subscriber imu_sub =
         nh.subscribe<sensor_msgs::Imu>("/mavros/imu/data", // Note: do NOT change it to /mavros/imu/data_raw !!!
-                                       100,
+                                       10,
                                        boost::bind(&Imu_Data_t::feed, &fsm.imu_data, _1),
                                        ros::VoidConstPtr(),
                                        ros::TransportHints().tcpNoDelay());
 
     ros::Subscriber imu_raw_sub =
         nh.subscribe<sensor_msgs::Imu>("/mavros/imu/data_raw",
-                                       100,
+                                       10,
                                        boost::bind(&Imu_Data_t::feed, &fsm.imu_raw_data, _1),
                                        ros::VoidConstPtr(),
                                        ros::TransportHints().tcpNoDelay());
 
     ros::Subscriber acc_sub =
         nh.subscribe<geometry_msgs::AccelStamped>("acc", // Note: do NOT change it to /mavros/imu/data_raw !!!
-                                       100,
+                                       10,
                                        boost::bind(&Acc_Data_t::feed, &fsm.acc_data, _1),
                                        ros::VoidConstPtr(),
                                        ros::TransportHints().tcpNoDelay());
@@ -149,7 +149,7 @@ int main(int argc, char *argv[])
 
     ros::Subscriber bat_sub =
         nh.subscribe<sensor_msgs::BatteryState>("/mavros/battery",
-                                                100,
+                                                10,
                                                 boost::bind(&Battery_Data_t::feed, &fsm.bat_data, _1),
                                                 ros::VoidConstPtr(),
                                                 ros::TransportHints().tcpNoDelay());

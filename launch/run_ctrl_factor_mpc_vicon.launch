@@ -6,9 +6,9 @@
 		<!-- rev from FakeGPS + IMU Fusion-->
 		<!-- <remap from="~odom" to="/self/fusion_odom" /> -->
 		<remap from="~odom" to="/vicon/odom" />
-		<remap from="~acc"  to="/vrpn_client_node/Quad13_ipn/accel" />
+		<remap from="~acc"  to="/vrpn_client_node/ductQuad/accel" />
 		<remap from="~cmd"  to="/position_cmd" />
-
+		<remap from="~takeoff_land" to="/takeoff_land" />
         <rosparam command="load" file="$(find jpcm)/config/ctrl_param_fpv_FactorMPC_vicon.yaml" />
 	</node>
  

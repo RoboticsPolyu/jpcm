@@ -68,6 +68,9 @@ void PX4CtrlFSM::process()
 	ros::Time now_time = ros::Time::now();
 	Controller_Output_t thr_bodyrate_u;
 	Desired_State_t des(odom_data);
+	Odom_Data_t     _state = odom_data;
+	Odom_Data_t     _gt_state = GT;
+
 	bool rotor_low_speed_during_land = false;
 	CTRL_MODE ctrl_mode;
 	ctrl_mode = cvt_ctrl_mode(param.ctrl_mode);
@@ -79,7 +82,7 @@ void PX4CtrlFSM::process()
 	{
 		if (rc_data.enter_hover_mode) // Try to jump to AUTO_HOVER
 		{
-			if (!odom_is_received(now_time))
+			if (!odom_is_received(now_time, _state))
 			{
 				ROS_ERROR("[JPCM] Reject AUTO_HOVER(L2). No odom!");
 				break;
@@ -89,22 +92,22 @@ void PX4CtrlFSM::process()
 				ROS_ERROR("[JPCM] Reject AUTO_HOVER(L2). You are sending commands before toggling into AUTO_HOVER, which is not allowed. Stop sending commands now!");
 				break;
 			}
-			if (odom_data.v.norm() > 3.0)
+			if (_state.v.norm() > 3.0)
 			{
-				ROS_ERROR("[JPCM] Reject AUTO_HOVER(L2). Odom_Vel=%fm/s, which seems that the locolization module goes wrong!", odom_data.v.norm());
+				ROS_ERROR("[JPCM] Reject AUTO_HOVER(L2). Odom_Vel=%fm/s, which seems that the locolization module goes wrong!", _state.v.norm());
 				break;
 			}
 
 			state = AUTO_HOVER;
 			controller.resetThrustMapping();
-			set_hov_with_odom();
+			set_hov_with_odom(_state);
 			toggle_offboard_mode(true);
 
 			ROS_INFO("\033[32m[JPCM] MANUAL_CTRL(L1) --> AUTO_HOVER(L2)\033[32m");
 		}
 		else if (param.takeoff_land.enable && takeoff_land_data.triggered && takeoff_land_data.takeoff_land_cmd == quadrotor_msgs::TakeoffLand::TAKEOFF) // Try to jump to AUTO_TAKEOFF
 		{
-			if (!odom_is_received(now_time))
+			if (!odom_is_received(now_time, _state))
 			{
 				ROS_ERROR("[JPCM] Reject AUTO_TAKEOFF. No odom!");
 				break;
@@ -114,9 +117,9 @@ void PX4CtrlFSM::process()
 				ROS_ERROR("[JPCM] Reject AUTO_TAKEOFF. You are sending commands before toggling into AUTO_TAKEOFF, which is not allowed. Stop sending commands now!");
 				break;
 			}
-			if (odom_data.v.norm() > 0.1)
+			if (_state.v.norm() > 0.1)
 			{
-				ROS_ERROR("[JPCM] Reject AUTO_TAKEOFF. Odom_Vel=%fm/s, non-static takeoff is not allowed!", odom_data.v.norm());
+				ROS_ERROR("[JPCM] Reject AUTO_TAKEOFF. Odom_Vel=%fm/s, non-static takeoff is not allowed!", _state.v.norm());
 				break;
 			}
 			if (!get_landed())
@@ -145,7 +148,7 @@ void PX4CtrlFSM::process()
 
 			state = AUTO_TAKEOFF;
 			controller.resetThrustMapping();
-			set_start_pose_for_takeoff_land(odom_data);
+			set_start_pose_for_takeoff_land(_state);
 			toggle_offboard_mode(true);				  // toggle on offboard before arm
 			for (int i = 0; i < 10 && ros::ok(); ++i) // wait for 0.1 seconds to allow mode change by FMU // mark
 			{
@@ -176,7 +179,7 @@ void PX4CtrlFSM::process()
 
 	case AUTO_HOVER:
 	{
-		if (!rc_data.is_hover_mode || !odom_is_received(now_time))
+		if (!rc_data.is_hover_mode || !odom_is_received(now_time, _state))
 		{
 			state = MANUAL_CTRL;
 			toggle_offboard_mode(false);
@@ -196,7 +199,7 @@ void PX4CtrlFSM::process()
 		{
 
 			state = AUTO_LAND;
-			set_start_pose_for_takeoff_land(odom_data);
+			set_start_pose_for_takeoff_land(_state);
 
 			ROS_INFO("\033[32m[JPCM] AUTO_HOVER(L2) --> AUTO_LAND\033[32m");
 		}
@@ -208,7 +211,7 @@ void PX4CtrlFSM::process()
 				(takeoff_land.delay_trigger.first && now_time > takeoff_land.delay_trigger.second))
 			{
 				takeoff_land.delay_trigger.first = false;
-				publish_trigger(odom_data.msg);
+				publish_trigger(_state.msg);
 				ROS_INFO("\033[32m[JPCM] TRIGGER sent, allow user command.\033[32m");
 			}
 
@@ -220,7 +223,7 @@ void PX4CtrlFSM::process()
 
 	case CMD_CTRL:
 	{
-		if (!rc_data.is_hover_mode || !odom_is_received(now_time))
+		if (!rc_data.is_hover_mode || !odom_is_received(now_time, _state))
 		{
 			state = MANUAL_CTRL;
 			toggle_offboard_mode(false);
@@ -230,7 +233,7 @@ void PX4CtrlFSM::process()
 		else if (!rc_data.is_command_mode || !cmd_is_received(now_time))
 		{
 			state = AUTO_HOVER;
-			set_hov_with_odom();
+			set_hov_with_odom(_state);
 			des = get_hover_des();
 			ROS_INFO("[JPCM] From CMD_CTRL(L3) to AUTO_HOVER(L2)!");
 		}
@@ -255,10 +258,10 @@ void PX4CtrlFSM::process()
 		{
 			des = get_rotor_speed_up_des(now_time);
 		}
-		else if (odom_data.p(2) >= (takeoff_land.start_pose(2) + param.takeoff_land.height)) // reach the desired height
+		else if (_state.p(2) >= (takeoff_land.start_pose(2) + param.takeoff_land.height)) // reach the desired height
 		{
 			state = AUTO_HOVER;
-			set_hov_with_odom();
+			set_hov_with_odom(_state);
 			ROS_INFO("\033[32m[JPCM] AUTO_TAKEOFF --> AUTO_HOVER(L2)\033[32m");
 
 			takeoff_land.delay_trigger.first = true;
@@ -274,7 +277,7 @@ void PX4CtrlFSM::process()
 
 	case AUTO_LAND:
 	{
-		if (!rc_data.is_hover_mode || !odom_is_received(now_time))
+		if (!rc_data.is_hover_mode || !odom_is_received(now_time, _state))
 		{
 			state = MANUAL_CTRL;
 			toggle_offboard_mode(false);
@@ -284,7 +287,7 @@ void PX4CtrlFSM::process()
 		else if (!rc_data.is_command_mode)
 		{
 			state = AUTO_HOVER;
-			set_hov_with_odom();
+			set_hov_with_odom(_state);
 			des = get_hover_des();
 			ROS_INFO("[JPCM] From AUTO_LAND to AUTO_HOVER(L2)!");
 		}
@@ -329,7 +332,7 @@ void PX4CtrlFSM::process()
 	}
 
 	// Eigen::Vector3d linear_acc 
-	//	= acc_data.acc + odom_data.q.inverse().toRotationMatrix()* Eigen::Vector3d(0, 0, param.gra);
+	//	= acc_data.acc + _state.q.inverse().toRotationMatrix()* Eigen::Vector3d(0, 0, param.gra);
 	// imu_data.a = linear_acc;
 
 	// STEP2: estimate thrust model
@@ -351,20 +354,20 @@ void PX4CtrlFSM::process()
   		// des.q = rot.toQuaternion();
 		if(ctrl_mode == CTRL_MODE::JPCM)
 		{
-			controller.calculateControl(des, odom_data, imu_data, imu_raw_data, thr_bodyrate_u, ctrl_mode);
+			controller.calculateControl(des, _state, imu_data, imu_raw_data, thr_bodyrate_u, ctrl_mode);
 		}
 		else if(ctrl_mode == CTRL_MODE::MPC)
 		{
-			debug_msg = controller.calculateControl(des, GT, odom_data, imu_data, thr_bodyrate_u, ctrl_mode);
+			debug_msg = controller.calculateControl(des, _gt_state, _state, imu_data, thr_bodyrate_u, ctrl_mode);
 		}
 		else if(ctrl_mode == CTRL_MODE::MPCOBS)
 		{
 			std::vector<Obstacle> _obs_data = get_obs_data_copy();
-			debug_msg = controller.calculateControl(des, GT, odom_data, imu_data, _obs_data, thr_bodyrate_u, ctrl_mode);
+			debug_msg = controller.calculateControl(des, _gt_state, _state, imu_data, _obs_data, thr_bodyrate_u, ctrl_mode);
 		}
 		else
 		{
-			debug_msg = controller.calculateControl(des, odom_data, imu_data, thr_bodyrate_u);
+			debug_msg = controller.calculateControl(des, _state, imu_data, thr_bodyrate_u);
 		}
 		debug_msg.header.stamp = now_time;
 		debug_pub.publish(debug_msg);
@@ -381,7 +384,7 @@ void PX4CtrlFSM::process()
 	}
 
 	// STEP5: Detect if the drone has landed
-	land_detector(state, des, odom_data);
+	land_detector(state, des, _state);
 	// cout << takeoff_land.landed << " ";
 	// fflush(stdout);
 
@@ -506,8 +509,8 @@ Desired_State_t PX4CtrlFSM::get_takeoff_land_des(const double speed)
 	// takeoff_land.start_pose(2) += speed * delta_t;
 
 	Desired_State_t des;
-	des.p = takeoff_land.start_pose.head<3>() + Eigen::Vector3d(-speed * delta_t / 2.0, speed * delta_t, speed * delta_t);
-	des.v = Eigen::Vector3d(-speed / 2.0, speed, speed);
+	des.p = takeoff_land.start_pose.head<3>() + Eigen::Vector3d(0, 0, speed * delta_t);
+	des.v = Eigen::Vector3d(0, 0, speed);
 	des.a = Eigen::Vector3d::Zero();
 	des.j = Eigen::Vector3d::Zero();
 	des.yaw = takeoff_land.start_pose(3);
@@ -516,10 +519,10 @@ Desired_State_t PX4CtrlFSM::get_takeoff_land_des(const double speed)
 	return des;
 }
 
-void PX4CtrlFSM::set_hov_with_odom()
+void PX4CtrlFSM::set_hov_with_odom(const Odom_Data_t &odom)
 {
-	hover_pose.head<3>() = odom_data.p;
-	hover_pose(3) = get_yaw_from_quaternion(odom_data.q);
+	hover_pose.head<3>() = odom.p;
+	hover_pose(3) = get_yaw_from_quaternion(odom.q);
 
 	last_set_hover_pose_time = ros::Time::now();
 }
@@ -551,8 +554,8 @@ void PX4CtrlFSM::set_hov_with_rc()
 
 void PX4CtrlFSM::set_start_pose_for_takeoff_land(const Odom_Data_t &odom)
 {
-	takeoff_land.start_pose.head<3>() = odom_data.p;
-	takeoff_land.start_pose(3) = get_yaw_from_quaternion(odom_data.q);
+	takeoff_land.start_pose.head<3>() = odom.p;
+	takeoff_land.start_pose(3) = get_yaw_from_quaternion(odom.q);
 
 	takeoff_land.toggle_takeoff_land_time = ros::Time::now();
 }
@@ -567,9 +570,9 @@ bool PX4CtrlFSM::cmd_is_received(const ros::Time &now_time)
 	return (now_time - cmd_data.rcv_stamp).toSec() < param.msg_timeout.cmd;
 }
 
-bool PX4CtrlFSM::odom_is_received(const ros::Time &now_time)
+bool PX4CtrlFSM::odom_is_received(const ros::Time &now_time, const Odom_Data_t &odom)
 {
-	return (now_time - odom_data.rcv_stamp).toSec() < param.msg_timeout.odom;
+	return (now_time - odom.rcv_stamp).toSec() < param.msg_timeout.odom;
 }
 
 bool PX4CtrlFSM::imu_is_received(const ros::Time &now_time)

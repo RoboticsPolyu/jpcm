@@ -367,7 +367,6 @@ quadrotor_msgs::Px4ctrlDebug Controller::calculateControl(const Desired_State_t 
 {
   // Odom_Data_t odom_noise = add_Guassian_noise(odom);
   Odom_Data_t odom_noise = odom;
-  
   gtsam::Vector3 gt_rxyz = gtsam::Rot3(GT.q).rpy();
 
   bool   timeout  = false;

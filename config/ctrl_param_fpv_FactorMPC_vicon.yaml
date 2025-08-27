@@ -2,7 +2,7 @@
 # ⭐⭐⭐  Set parameters carefully for satisfied performance!   ⭐⭐⭐ #
 #########################################################################
 
-mass        : 0.979 # kg 
+mass        : 0.908 # kg 
 gra         : 9.81 
 pose_solver : 1     # 0:From ZhepeiWang (drag & less singular) 1:From ZhepeiWang, 2:From rotor-drag    
 ctrl_freq_max    : 100.0
@@ -23,16 +23,16 @@ auto_takeoff_land:
     enable: true
     enable_auto_arm: true
     no_RC: false
-    takeoff_height: 1.5 # m
-    takeoff_land_speed: 0.20 # m/s
+    takeoff_height: 0.5 # m
+    takeoff_land_speed: 0.05 # m/s
 
 thrust_model: # The model that maps thrust signal thr_bodyrate_u(0~1) to real thrust force F(Unit:N): F=K1*Voltage^K2*(K3*thr_bodyrate_u^2+(1-K3)*thr_bodyrate_u). 
     print_value: false # display the value of “thr_scale_compensate” or “hover_percentage” during thrust model estimating.
     accurate_thrust_model: false  # This can always enabled if don't require accurate control performance :-)
     # accurate thrust mapping parameters
-    K1: 0.7583 # Needs precise calibration!
-    K2: 1.6942 # Needs precise calibration!
-    K3: 0.6786 # Needs precise calibration! K3 equals THR_MDL_FAC in https://docs.px4.io/master/en/config_mc/pid_tuning_guide_multicopter.html.
+    K1: 0  # Needs precise calibration!
+    K2: 0 # Needs precise calibration!
+    K3: 0 # Needs precise calibration! K3 equals THR_MDL_FAC in https://docs.px4.io/master/en/config_mc/pid_tuning_guide_multicopter.html.
     # approximate thrust mapping parameters
     hover_percentage: 0.23  # Thrust percentage in Stabilize/Arco mode # *
     thrust_upper_bound: 0.60
@@ -90,16 +90,16 @@ Factor_graph:
     PRI_VICON_POS_COV: 0.001
     PRI_VICON_VEL_COV: 0.001
 
-    CONTROL_P_COV_X:   0.15
+    CONTROL_P_COV_X:   0.05
     CONTROL_PF_COV_X:  0.03
-    CONTROL_P_COV_Y:   0.15
+    CONTROL_P_COV_Y:   0.05
     CONTROL_PF_COV_Y:  0.03
-    CONTROL_P_COV_Z:   0.20
+    CONTROL_P_COV_Z:   0.05
     CONTROL_PF_COV_Z:  0.03
 
     CONTROL_R3_COV:    0.03
-    CONTROL_R2_COV:    0.4
-    CONTROL_R1_COV:    0.4
+    CONTROL_R2_COV:    0.3
+    CONTROL_R1_COV:    0.3
 
     CONTROL_V_COV:     1.3
     DYNAMIC_P_COV:     0.0001
