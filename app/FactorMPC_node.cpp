@@ -52,6 +52,24 @@ void twist_callback(const geometry_msgs::TwistStamped::ConstPtr& msg, PX4CtrlFSM
     fsm->obs_data.push_back(obs);
 }
 
+void odom_callback(nav_msgs::OdometryConstPtr pMsg, PX4CtrlFSM* fsm)
+{
+    std::lock_guard<std::mutex> lock(fsm->odom_data_mutex);
+    fsm->odom_data.feed(pMsg);
+}
+
+// Similarly for other callbacks:
+void imu_callback(sensor_msgs::ImuConstPtr pMsg, PX4CtrlFSM* fsm)
+{
+    std::lock_guard<std::mutex> lock(fsm->imu_data_mutex);
+    fsm->imu_data.feed(pMsg);
+}
+
+void cmd_callback(quadrotor_msgs::PositionCommandConstPtr pMsg, PX4CtrlFSM* fsm)
+{
+    std::lock_guard<std::mutex> lock(fsm->cmd_data_mutex);
+    fsm->cmd_data.feed(pMsg);
+}
 
 int main(int argc, char *argv[])
 {
@@ -96,45 +114,45 @@ int main(int argc, char *argv[])
 
     ros::Subscriber gt_sub   =
         nh.subscribe<nav_msgs::Odometry>("GT",
-                                         10,
-                                         boost::bind(&Odom_Data_t::feed, &fsm.GT, _1),
+                                         100,
+                                         boost::bind(&odom_callback, _1, &fsm),
                                          ros::VoidConstPtr(),
                                          ros::TransportHints().tcpNoDelay());
 
     ros::Subscriber odom_sub =
         nh.subscribe<nav_msgs::Odometry>("odom",
-                                         10,
-                                         boost::bind(&Odom_Data_t::feed, &fsm.odom_data, _1),
+                                         100,
+                                         boost::bind(&odom_callback, _1, &fsm),
                                          ros::VoidConstPtr(),
                                          ros::TransportHints().tcpNoDelay());
 
     ros::Subscriber cmd_sub =
         nh.subscribe<quadrotor_msgs::PositionCommand>("cmd",
-                                                      10,
-                                                      boost::bind(&Command_Data_t::feed, &fsm.cmd_data, _1),
+                                                      100,
+                                                      boost::bind(&cmd_callback, _1, &fsm),
                                                       ros::VoidConstPtr(),
                                                       ros::TransportHints().tcpNoDelay());
 
     ros::Subscriber imu_sub =
         nh.subscribe<sensor_msgs::Imu>("/mavros/imu/data", // Note: do NOT change it to /mavros/imu/data_raw !!!
-                                       10,
-                                       boost::bind(&Imu_Data_t::feed, &fsm.imu_data, _1),
+                                       100,
+                                       boost::bind(&imu_callback, _1, &fsm),
                                        ros::VoidConstPtr(),
                                        ros::TransportHints().tcpNoDelay());
 
     ros::Subscriber imu_raw_sub =
         nh.subscribe<sensor_msgs::Imu>("/mavros/imu/data_raw",
-                                       10,
-                                       boost::bind(&Imu_Data_t::feed, &fsm.imu_raw_data, _1),
+                                       100,
+                                       boost::bind(&imu_callback, _1, &fsm),
                                        ros::VoidConstPtr(),
                                        ros::TransportHints().tcpNoDelay());
 
-    ros::Subscriber acc_sub =
-        nh.subscribe<geometry_msgs::AccelStamped>("acc", // Note: do NOT change it to /mavros/imu/data_raw !!!
-                                       10,
-                                       boost::bind(&Acc_Data_t::feed, &fsm.acc_data, _1),
-                                       ros::VoidConstPtr(),
-                                       ros::TransportHints().tcpNoDelay());
+    // ros::Subscriber acc_sub =
+    //     nh.subscribe<geometry_msgs::AccelStamped>("acc", // Note: do NOT change it to /mavros/imu/data_raw !!!
+    //                                    100,
+    //                                    boost::bind(&Acc_Data_t::feed, &fsm.acc_data, _1),
+    //                                    ros::VoidConstPtr(),
+    //                                    ros::TransportHints().tcpNoDelay());
 
     ros::Subscriber hover_thrust_sub = 
         nh.subscribe<mavros_msgs::TrustMoments>("/mavros/trust_moments_px4", 10, boost::bind(&hover_thrust_cb, _1, &fsm.hover_thrust));
@@ -143,13 +161,13 @@ int main(int argc, char *argv[])
     if (!param.takeoff_land.no_RC) // mavros will still publish wrong rc messages although no RC is connected
     {
         rc_sub = nh.subscribe<mavros_msgs::RCIn>("/mavros/rc/in",
-                                                 10,
+                                                 100,
                                                  boost::bind(&RC_Data_t::feed, &fsm.rc_data, _1));
     }
 
     ros::Subscriber bat_sub =
         nh.subscribe<sensor_msgs::BatteryState>("/mavros/battery",
-                                                10,
+                                                100,
                                                 boost::bind(&Battery_Data_t::feed, &fsm.bat_data, _1),
                                                 ros::VoidConstPtr(),
                                                 ros::TransportHints().tcpNoDelay());
@@ -198,13 +216,18 @@ int main(int argc, char *argv[])
             ROS_ERROR("Unable to connnect to PX4!!!");
     }
 
+    ros::AsyncSpinner spinner(3);
+
     ros::Rate r(param.ctrl_freq_max);
     while (ros::ok())
     {
-        r.sleep();
-        ros::spinOnce();
+        // r.sleep();
+        // ros::spinOnce();
         fsm.process(); // We DO NOT rely on feedback as trigger, since there is no significant performance difference through our test.
+        r.sleep();
     }
+
+    spinner.stop();
 
     return 0;
 }

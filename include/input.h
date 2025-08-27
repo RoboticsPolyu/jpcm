@@ -14,6 +14,8 @@
 #include <sensor_msgs/BatteryState.h>
 #include <uav_utils/utils.h>
 #include "PX4CtrlParam.h"
+// #include "PX4CtrlFSM.h"
+
 
 class RC_Data_t
 {
@@ -84,8 +86,12 @@ public:
   ros::Time rcv_stamp;
   bool recv_new_msg;
 
+  // std::mutex odom_mutex;
+
   Odom_Data_t();
   void feed(nav_msgs::OdometryConstPtr pMsg);
+
+  // void feed(nav_msgs::OdometryConstPtr pMsg, PX4CtrlFSM* fsm);
 };
 
 class Imu_Data_t

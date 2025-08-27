@@ -38,19 +38,29 @@ public:
 	RC_Data_t rc_data;
 	State_Data_t state_data;
 	ExtendedState_Data_t  extended_state_data;
-	Odom_Data_t           odom_data;
-	Odom_Data_t           GT;
-	Imu_Data_t            imu_data;
-	Imu_Data_t            imu_raw_data;
-	Acc_Data_t            acc_data; // linear acc
+
+    // Mutexes for data protection
+    std::mutex odom_data_mutex;
+    std::mutex gt_mutex;
+    std::mutex imu_data_mutex;
+    std::mutex imu_raw_data_mutex;
+    std::mutex cmd_data_mutex;
+    std::mutex bat_data_mutex;
+	std::mutex obs_data_mutex; // already exists
+	std::mutex rc_data_mutex;
 	
-	std::mutex obs_data_mutex; 
 	std::vector<Obstacle> obs_data;
 
-	float                hover_thrust;
-	
+	Odom_Data_t    odom_data;
+	Odom_Data_t    GT;
+	Imu_Data_t     imu_data;
+	Imu_Data_t     imu_raw_data;
+	// Acc_Data_t     acc_data; // linear acc
 	Command_Data_t cmd_data;
 	Battery_Data_t bat_data;
+
+	float          hover_thrust;
+
 	Takeoff_Land_Data_t takeoff_land_data;
 
 	Controller &controller;

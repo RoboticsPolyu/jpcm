@@ -76,15 +76,17 @@ int main(int argc, char *argv[])
                                        ros::VoidConstPtr(),
                                        ros::TransportHints().tcpNoDelay());
 
-    ros::Subscriber acc_sub =
-        nh.subscribe<geometry_msgs::AccelStamped>("acc", // Note: do NOT change it to /mavros/imu/data_raw !!!
-                                       100,
-                                       boost::bind(&Acc_Data_t::feed, &fsm.acc_data, _1),
-                                       ros::VoidConstPtr(),
-                                       ros::TransportHints().tcpNoDelay());
+    // ros::Subscriber acc_sub =
+    //     nh.subscribe<geometry_msgs::AccelStamped>("acc", // Note: do NOT change it to /mavros/imu/data_raw !!!
+    //                                    100,
+    //                                    boost::bind(&Acc_Data_t::feed, &fsm.acc_data, _1),
+    //                                    ros::VoidConstPtr(),
+    //                                    ros::TransportHints().tcpNoDelay());
 
     ros::Subscriber hover_thrust_sub = 
-        nh.subscribe<mavros_msgs::TrustMoments>("/mavros/trust_moments_px4", 10, boost::bind(&hover_thrust_cb, _1, &fsm.hover_thrust));
+        nh.subscribe<mavros_msgs::TrustMoments>("/mavros/trust_moments_px4", 
+                                                10, 
+                                                boost::bind(&hover_thrust_cb, _1, &fsm.hover_thrust));
 
     ros::Subscriber rc_sub;
     if (!param.takeoff_land.no_RC) // mavros will still publish wrong rc messages although no RC is connected

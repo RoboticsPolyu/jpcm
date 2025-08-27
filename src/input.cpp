@@ -1,5 +1,6 @@
 #include "input.h"
 
+
 RC_Data_t::RC_Data_t()
 {
     rcv_stamp = ros::Time(0);
@@ -130,6 +131,8 @@ Odom_Data_t::Odom_Data_t()
 
 void Odom_Data_t::feed(nav_msgs::OdometryConstPtr pMsg)
 {
+    // odom_mutex.lock();
+
     ros::Time now = ros::Time::now();
 
     msg = *pMsg;
@@ -355,3 +358,4 @@ void Takeoff_Land_Data_t::feed(quadrotor_msgs::TakeoffLandConstPtr pMsg)
     triggered = true;
     takeoff_land_cmd = pMsg->takeoff_land_cmd;
 }
+

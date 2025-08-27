@@ -68,8 +68,27 @@ void PX4CtrlFSM::process()
 	ros::Time now_time = ros::Time::now();
 	Controller_Output_t thr_bodyrate_u;
 	Desired_State_t des(odom_data);
-	Odom_Data_t     _state = odom_data;
-	Odom_Data_t     _gt_state = GT;
+
+
+	// Create local copies of protected data
+    Odom_Data_t _state, _gt_state;
+	Imu_Data_t _imu_data, _imu_raw_data;
+    {
+        std::lock_guard<std::mutex> lock1(odom_data_mutex);
+        _state = odom_data;
+    }
+    {
+        std::lock_guard<std::mutex> lock2(gt_mutex);
+        _gt_state = GT;
+    }
+	{
+		std::lock_guard<std::mutex> lock3(gt_mutex);
+		_imu_data = imu_data;
+	}
+	{
+		std::lock_guard<std::mutex> lock4(gt_mutex);
+		_imu_raw_data = imu_raw_data;
+	}
 
 	bool rotor_low_speed_during_land = false;
 	CTRL_MODE ctrl_mode;
@@ -339,14 +358,14 @@ void PX4CtrlFSM::process()
 	if (state == AUTO_HOVER || state == CMD_CTRL)
 	{
 		// controller.estimateThrustModel(imu_data.a, bat_data.volt, param);
-		controller.estimateThrustModel(imu_data.a, param);
+		controller.estimateThrustModel(_imu_data.a, param);
 		// controller.set_hover_thrust(hover_thrust);
 	}
 
 	// STEP3: solve and update new control commands
 	if (rotor_low_speed_during_land) // used at the start of auto takeoff
 	{
-		motors_idling(imu_data, thr_bodyrate_u);
+		motors_idling(_imu_data, thr_bodyrate_u);
 	}
 	else
 	{
@@ -354,20 +373,20 @@ void PX4CtrlFSM::process()
   		// des.q = rot.toQuaternion();
 		if(ctrl_mode == CTRL_MODE::JPCM)
 		{
-			controller.calculateControl(des, _state, imu_data, imu_raw_data, thr_bodyrate_u, ctrl_mode);
+			controller.calculateControl(des, _state, _imu_data, _imu_raw_data, thr_bodyrate_u, ctrl_mode);
 		}
 		else if(ctrl_mode == CTRL_MODE::MPC)
 		{
-			debug_msg = controller.calculateControl(des, _gt_state, _state, imu_data, thr_bodyrate_u, ctrl_mode);
+			debug_msg = controller.calculateControl(des, _gt_state, _state, _imu_data, thr_bodyrate_u, ctrl_mode);
 		}
 		else if(ctrl_mode == CTRL_MODE::MPCOBS)
 		{
 			std::vector<Obstacle> _obs_data = get_obs_data_copy();
-			debug_msg = controller.calculateControl(des, _gt_state, _state, imu_data, _obs_data, thr_bodyrate_u, ctrl_mode);
+			debug_msg = controller.calculateControl(des, _gt_state, _state, _imu_data, _obs_data, thr_bodyrate_u, ctrl_mode);
 		}
 		else
 		{
-			debug_msg = controller.calculateControl(des, _state, imu_data, thr_bodyrate_u);
+			debug_msg = controller.calculateControl(des, _state, _imu_data, thr_bodyrate_u);
 		}
 		debug_msg.header.stamp = now_time;
 		debug_pub.publish(debug_msg);
@@ -565,36 +584,43 @@ bool PX4CtrlFSM::rc_is_received(const ros::Time &now_time)
 	return (now_time - rc_data.rcv_stamp).toSec() < param.msg_timeout.rc;
 }
 
-bool PX4CtrlFSM::cmd_is_received(const ros::Time &now_time)
-{
-	return (now_time - cmd_data.rcv_stamp).toSec() < param.msg_timeout.cmd;
-}
-
-bool PX4CtrlFSM::odom_is_received(const ros::Time &now_time, const Odom_Data_t &odom)
-{
-	return (now_time - odom.rcv_stamp).toSec() < param.msg_timeout.odom;
-}
 
 bool PX4CtrlFSM::imu_is_received(const ros::Time &now_time)
 {
-	return (now_time - imu_data.rcv_stamp).toSec() < param.msg_timeout.imu;
+    std::lock_guard<std::mutex> lock(imu_data_mutex);
+    return (now_time - imu_data.rcv_stamp).toSec() < param.msg_timeout.imu;
+}
+
+bool PX4CtrlFSM::cmd_is_received(const ros::Time &now_time)
+{
+    std::lock_guard<std::mutex> lock(cmd_data_mutex);
+    return (now_time - cmd_data.rcv_stamp).toSec() < param.msg_timeout.cmd;
 }
 
 bool PX4CtrlFSM::bat_is_received(const ros::Time &now_time)
 {
-	return (now_time - bat_data.rcv_stamp).toSec() < param.msg_timeout.bat;
+    std::lock_guard<std::mutex> lock(bat_data_mutex);
+    return (now_time - bat_data.rcv_stamp).toSec() < param.msg_timeout.bat;
+}
+
+bool PX4CtrlFSM::odom_is_received(const ros::Time &now_time, const Odom_Data_t &odom)
+{
+    std::lock_guard<std::mutex> lock(odom_data_mutex);
+    return (now_time - odom.rcv_stamp).toSec() < param.msg_timeout.odom;
 }
 
 bool PX4CtrlFSM::recv_new_odom()
 {
-	if (odom_data.recv_new_msg)
-	{
-		odom_data.recv_new_msg = false;
-		return true;
-	}
-
-	return false;
+    std::lock_guard<std::mutex> lock(odom_data_mutex);
+    if (odom_data.recv_new_msg)
+    {
+        odom_data.recv_new_msg = false;
+        return true;
+    }
+    return false;
 }
+
+
 
 void PX4CtrlFSM::publish_bodyrate_ctrl(const Controller_Output_t &thr_bodyrate_u, const ros::Time &stamp)
 {
