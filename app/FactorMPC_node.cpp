@@ -217,6 +217,7 @@ int main(int argc, char *argv[])
     }
 
     ros::AsyncSpinner spinner(3);
+    spinner.start(); 
 
     ros::Rate r(param.ctrl_freq_max);
     while (ros::ok())

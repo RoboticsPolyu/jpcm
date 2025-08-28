@@ -76,17 +76,18 @@ void PX4CtrlFSM::process()
     {
         std::lock_guard<std::mutex> lock1(odom_data_mutex);
         _state = odom_data;
+		// std::cout << "copy odom data : " << odom_data.rcv_stamp.toNSec() << std::endl;
     }
     {
         std::lock_guard<std::mutex> lock2(gt_mutex);
         _gt_state = GT;
     }
 	{
-		std::lock_guard<std::mutex> lock3(gt_mutex);
+		std::lock_guard<std::mutex> lock3(imu_data_mutex);
 		_imu_data = imu_data;
 	}
 	{
-		std::lock_guard<std::mutex> lock4(gt_mutex);
+		std::lock_guard<std::mutex> lock4(imu_raw_data_mutex);
 		_imu_raw_data = imu_raw_data;
 	}
 

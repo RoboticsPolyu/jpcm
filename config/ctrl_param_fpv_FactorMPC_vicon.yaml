@@ -98,8 +98,8 @@ Factor_graph:
     CONTROL_PF_COV_Z:  0.03
 
     CONTROL_R3_COV:    0.03
-    CONTROL_R2_COV:    0.3
-    CONTROL_R1_COV:    0.3
+    CONTROL_R2_COV:    0.2
+    CONTROL_R1_COV:    0.2
 
     CONTROL_V_COV:     1.3
     DYNAMIC_P_COV:     0.0001
