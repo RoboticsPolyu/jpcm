@@ -18,6 +18,9 @@
 #include "controller.h"
 #include "JPCM.h"
 
+#include <thread>
+#include <atomic>
+#include <condition_variable>
 
 struct AutoTakeoffLand_t
 {
@@ -78,6 +81,32 @@ public:
 	Eigen::Vector4d hover_pose;
 	ros::Time last_set_hover_pose_time;
 
+
+	std::thread control_thread;
+    std::atomic<bool> control_thread_running;
+    std::mutex control_mutex;
+    std::condition_variable control_cv;
+
+    struct ControlInput {
+        Desired_State_t des;
+        Odom_Data_t state;
+        Odom_Data_t gt_state;
+        Imu_Data_t imu_data;
+        Imu_Data_t imu_raw_data;
+        std::vector<Obstacle> obs_data;
+        CTRL_MODE ctrl_mode;
+        bool new_data_available;
+        ros::Time stamp;
+    };
+    
+    ControlInput control_input;
+    Controller_Output_t control_output;
+
+    void startControlThread();
+    void stopControlThread();
+    void controlThreadFunction();
+    void publishControlFromThread(const Controller_Output_t &output, const ros::Time &stamp);
+
 	enum State_t
 	{
 		MANUAL_CTRL = 1, // JPCM is deactived. FCU is controled by the remote controller only
@@ -89,6 +118,11 @@ public:
 
 	PX4CtrlFSM(Parameter_t &, Controller &);
 	
+	~PX4CtrlFSM()
+	{
+		stopControlThread();
+	}
+
 	void process();
 	bool rc_is_received(const ros::Time &now_time);
 	bool cmd_is_received(const ros::Time &now_time);

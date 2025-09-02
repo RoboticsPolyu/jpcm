@@ -5,9 +5,11 @@ using namespace std;
 using namespace uav_utils;
 
 PX4CtrlFSM::PX4CtrlFSM(Parameter_t &param_, Controller &controller_) : param(param_), controller(controller_) /*, thrust_curve(thrust_curve_)*/
+	, control_thread_running(false)
 {
 	state = MANUAL_CTRL;
 	hover_pose.setZero();
+	control_input.new_data_available = false;
 }
 
 /* 
@@ -370,27 +372,44 @@ void PX4CtrlFSM::process()
 	}
 	else
 	{
+		// 准备控制线程的输入数据
+		{
+			std::lock_guard<std::mutex> lock(control_mutex);
+			control_input.des = des;
+			control_input.state = _state;
+			control_input.gt_state = _gt_state;
+			control_input.imu_data = _imu_data;
+			control_input.imu_raw_data = _imu_raw_data;
+			control_input.obs_data = get_obs_data_copy();
+			control_input.ctrl_mode = ctrl_mode;
+			control_input.stamp = now_time;
+			control_input.new_data_available = true;
+		}
+		
+		// 通知控制线程有新数据
+		control_cv.notify_one();
+
 		// gtsam::Rot3 rot = gtsam::Rot3::identity();
   		// des.q = rot.toQuaternion();
-		if(ctrl_mode == CTRL_MODE::JPCM)
-		{
-			controller.calculateControl(des, _state, _imu_data, _imu_raw_data, thr_bodyrate_u, ctrl_mode);
-		}
-		else if(ctrl_mode == CTRL_MODE::MPC)
-		{
-			debug_msg = controller.calculateControl(des, _gt_state, _state, _imu_data, thr_bodyrate_u, ctrl_mode);
-		}
-		else if(ctrl_mode == CTRL_MODE::MPCOBS)
-		{
-			std::vector<Obstacle> _obs_data = get_obs_data_copy();
-			debug_msg = controller.calculateControl(des, _gt_state, _state, _imu_data, _obs_data, thr_bodyrate_u, ctrl_mode);
-		}
-		else
-		{
-			debug_msg = controller.calculateControl(des, _state, _imu_data, thr_bodyrate_u);
-		}
-		debug_msg.header.stamp = now_time;
-		debug_pub.publish(debug_msg);
+		// if(ctrl_mode == CTRL_MODE::JPCM)
+		// {
+		// 	controller.calculateControl(des, _state, _imu_data, _imu_raw_data, thr_bodyrate_u, ctrl_mode);
+		// }
+		// else if(ctrl_mode == CTRL_MODE::MPC)
+		// {
+		// 	debug_msg = controller.calculateControl(des, _gt_state, _state, _imu_data, thr_bodyrate_u, ctrl_mode);
+		// }
+		// else if(ctrl_mode == CTRL_MODE::MPCOBS)
+		// {
+		// 	std::vector<Obstacle> _obs_data = get_obs_data_copy();
+		// 	debug_msg = controller.calculateControl(des, _gt_state, _state, _imu_data, _obs_data, thr_bodyrate_u, ctrl_mode);
+		// }
+		// else
+		// {
+		// 	debug_msg = controller.calculateControl(des, _state, _imu_data, thr_bodyrate_u);
+		// }
+		// debug_msg.header.stamp = now_time;
+		// debug_pub.publish(debug_msg);
 	}
 
 	// STEP4: publish control commands to mavros
@@ -738,3 +757,136 @@ void PX4CtrlFSM::reboot_FCU()
 	// if (param.print_dbg)
 	// 	printf("reboot result=%d(uint8_t), success=%d(uint8_t)\n", reboot_srv.response.result, reboot_srv.response.success);
 }
+
+void PX4CtrlFSM::startControlThread()
+{
+    if (control_thread_running) return;
+    
+    control_thread_running = true;
+    control_thread = std::thread(&PX4CtrlFSM::controlThreadFunction, this);
+    
+    ROS_INFO("[JPCM] Control thread started");
+}
+
+// Stop control thread
+void PX4CtrlFSM::stopControlThread()
+{
+    if (!control_thread_running) return;
+    
+    control_thread_running = false;
+    control_cv.notify_all();
+    
+    if (control_thread.joinable()) {
+        control_thread.join();
+    }
+    
+    ROS_INFO("[JPCM] Control thread stopped");
+}
+
+// Control thread function
+void PX4CtrlFSM::controlThreadFunction()
+{
+    ros::NodeHandle nh;
+    ros::Publisher thread_ctrl_pub = nh.advertise<mavros_msgs::AttitudeTarget>("mavros/setpoint_raw/attitude", 10);
+    
+    while (control_thread_running && ros::ok())
+    {
+        std::unique_lock<std::mutex> lock(control_mutex);
+        
+        // 等待新数据或线程停止
+        control_cv.wait_for(lock, std::chrono::milliseconds(10), 
+            [this] { return !control_thread_running || control_input.new_data_available; });
+        
+        if (!control_thread_running) break;
+        
+        if (control_input.new_data_available)
+        {
+            // 复制数据到本地变量
+            ControlInput local_input = control_input;
+            control_input.new_data_available = false;
+            lock.unlock();
+            
+            // 执行控制计算
+            Controller_Output_t local_output;
+            quadrotor_msgs::Px4ctrlDebug debug_msg;
+            
+            bool rotor_low_speed_during_land = false;
+            // 这里可以根据需要添加着陆检测逻辑
+            
+            if (!rotor_low_speed_during_land)
+            {
+                if(local_input.ctrl_mode == CTRL_MODE::JPCM)
+                {
+                    debug_msg = controller.calculateControl(local_input.des, local_input.state, 
+                                                          local_input.imu_data, local_input.imu_raw_data, 
+                                                          local_output, local_input.ctrl_mode);
+                }
+                else if(local_input.ctrl_mode == CTRL_MODE::MPC)
+                {
+                    debug_msg = controller.calculateControl(local_input.des, local_input.gt_state, 
+                                                          local_input.state, local_input.imu_data, 
+                                                          local_output, local_input.ctrl_mode);
+                }
+                else if(local_input.ctrl_mode == CTRL_MODE::MPCOBS)
+                {
+                    debug_msg = controller.calculateControl(local_input.des, local_input.gt_state, 
+                                                          local_input.state, local_input.imu_data, 
+                                                          local_input.obs_data, local_output, 
+                                                          local_input.ctrl_mode);
+                }
+                else
+                {
+                    debug_msg = controller.calculateControl(local_input.des, local_input.state, 
+                                                          local_input.imu_data, local_output);
+                }
+                
+                debug_msg.header.stamp = local_input.stamp;
+                
+                // Publish control command in the thread
+                publishControlFromThread(local_output, local_input.stamp);
+                
+                // 更新共享输出（如果需要）
+                {
+                    std::lock_guard<std::mutex> output_lock(control_mutex);
+                    control_output = local_output;
+                }
+                
+                // 发布调试信息（需要线程安全的发布器）
+                // debug_pub.publish(debug_msg); // 注意：这需要线程安全的发布器
+            }
+        }
+    }
+}
+
+// Publish control command in the thread
+void PX4CtrlFSM::publishControlFromThread(const Controller_Output_t &thr_bodyrate_u, const ros::Time &stamp)
+{
+    mavros_msgs::AttitudeTarget msg;
+    msg.header.stamp = stamp;
+    msg.header.frame_id = "FCU";
+
+    if (param.use_bodyrate_ctrl)
+    {
+        msg.type_mask = mavros_msgs::AttitudeTarget::IGNORE_ATTITUDE;
+        msg.body_rate.x = thr_bodyrate_u.bodyrates.x();
+        msg.body_rate.y = thr_bodyrate_u.bodyrates.y();
+        msg.body_rate.z = thr_bodyrate_u.bodyrates.z();
+    }
+    else
+    {
+        msg.type_mask = mavros_msgs::AttitudeTarget::IGNORE_ROLL_RATE |
+                       mavros_msgs::AttitudeTarget::IGNORE_PITCH_RATE |
+                       mavros_msgs::AttitudeTarget::IGNORE_YAW_RATE;
+        msg.orientation.x = thr_bodyrate_u.q.x();
+        msg.orientation.y = thr_bodyrate_u.q.y();
+        msg.orientation.z = thr_bodyrate_u.q.z();
+        msg.orientation.w = thr_bodyrate_u.q.w();
+    }
+
+    msg.thrust = thr_bodyrate_u.thrust;
+
+    static ros::NodeHandle nh;
+    static ros::Publisher thread_ctrl_pub = nh.advertise<mavros_msgs::AttitudeTarget>("mavros/setpoint_raw/attitude", 10);
+    thread_ctrl_pub.publish(msg);
+}
+

@@ -219,6 +219,8 @@ int main(int argc, char *argv[])
     ros::AsyncSpinner spinner(3);
     spinner.start(); 
 
+    fsm.startControlThread();
+    
     ros::Rate r(param.ctrl_freq_max);
     while (ros::ok())
     {
@@ -229,6 +231,9 @@ int main(int argc, char *argv[])
     }
 
     spinner.stop();
+
+    // 自动停止线程（析构函数中也会调用）
+    fsm.stopControlThread();
 
     return 0;
 }
